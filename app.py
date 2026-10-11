@@ -1,3 +1,4 @@
+
 import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -9,13 +10,50 @@ st.set_page_config(
     layout="centered"
 )
 
-# Page header
-st.title("🛠️ IT Support AI")
-st.caption("Machine Learning for IT Troubleshooting")
-st.markdown("**Developed by Abdullah Aitah**")
-st.divider()
+# ---------- Styling ----------
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #0b1220, #111d30);
+    color: #f1f5f9;
+}
+.block-container {
+    max-width: 850px;
+    padding-top: 2.5rem;
+}
+.hero {
+    padding: 1.5rem;
+    border: 1px solid #334155;
+    border-radius: 18px;
+    background: #142238;
+    margin-bottom: 1.5rem;
+}
+.brand {
+    color: #67e8f9;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+.subtitle {
+    color: #a8b8cc;
+}
+.result-card {
+    padding: 1.3rem;
+    background: #142238;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    margin: 1rem 0;
+}
+div.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    min-height: 3rem;
+    font-weight: 600;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Training data
+# ---------- Machine Learning Model ----------
 problems = [
     "My Wi-Fi is not working",
     "I have no internet connection",
@@ -37,58 +75,114 @@ categories = [
     "Printer", "Printer", "Printer", "Printer"
 ]
 
-# Train model
 model = Pipeline([
     ("vectorizer", TfidfVectorizer()),
     ("classifier", LogisticRegression())
 ])
-
 model.fit(problems, categories)
 
-# Suggested solutions
 solutions = {
-    "Network": (
-        "Check your Wi-Fi connection and router. "
-        "Test whether other devices can connect."
-    ),
-    "Login": (
-        "Check your username and keyboard layout. "
-        "If your account is locked, contact IT Support."
-    ),
-    "Printer": (
-        "Check the printer power, paper, and connection. "
-        "Make sure the correct printer is selected."
-    )
+    "Network": [
+        "Check that Wi-Fi is enabled on your device.",
+        "Check whether other devices can connect.",
+        "Restart the router if you are authorized to do so.",
+        "If the problem continues, contact IT Support."
+    ],
+    "Login": [
+        "Check your username and keyboard layout.",
+        "Make sure Caps Lock is not enabled.",
+        "If your account is locked, contact IT Support.",
+        "Never share your password with anyone."
+    ],
+    "Printer": [
+        "Make sure the printer is powered on.",
+        "Check paper, toner, and any error messages.",
+        "Verify the printer connection and selected printer.",
+        "Clear a paper jam only by following the printer instructions."
+    ]
 }
 
-# User input
-st.subheader("Describe your IT problem")
+# ---------- Session State ----------
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+if "problem" not in st.session_state:
+    st.session_state.problem = ""
+if "category" not in st.session_state:
+    st.session_state.category = ""
 
-user_problem = st.text_area(
-    "Enter your problem in English:",
-    placeholder="Example: My internet connection is very slow",
-    height=120
-)
+# ---------- Header ----------
+st.markdown("""
+<div class="hero">
+    <div class="brand">INTELLIGENT IT TROUBLESHOOTING</div>
+    <h1>🛠️ IT Support AI</h1>
+    <p class="subtitle">
+        Describe your technical issue and get a recommended solution.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-if st.button("Analyze Problem", type="primary"):
-    if not user_problem.strip():
-        st.warning("Please describe your IT problem first.")
-    else:
-        prediction = model.predict([user_problem])[0]
+# ---------- Home Page ----------
+if st.session_state.page == "home":
+    st.subheader("How can we help you?")
+    st.write("Enter your IT problem below to begin the analysis.")
 
-        st.divider()
-        st.subheader("Analysis Results")
-
-        st.success(f"Predicted Category: {prediction}")
-
-        st.markdown("### Suggested Solution")
-        st.info(solutions[prediction])
-
-        st.caption(
-            "Educational prototype: predictions may be incorrect. "
-            "Please verify the suggested steps."
+    with st.form("problem_form"):
+        problem = st.text_area(
+            "Describe your problem",
+            placeholder="Example: My Wi-Fi is not working",
+            height=140
+        )
+        submitted = st.form_submit_button(
+            "🔍 Analyze Problem",
+            type="primary",
+            use_container_width=True
         )
 
-# Footer
+    if submitted:
+        if not problem.strip():
+            st.warning("Please describe your IT problem first.")
+        else:
+            category = model.predict([problem.strip()])[0]
+            st.session_state.problem = problem.strip()
+            st.session_state.category = category
+            st.session_state.page = "result"
+            st.rerun()
+
+# ---------- Results Page ----------
+else:
+    st.subheader("Analysis Results")
+
+    st.markdown(
+        f'<div class="result-card">'
+        f'<p class="subtitle">YOUR REPORTED ISSUE</p>'
+        f'<strong>{st.session_state.problem}</strong>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+    category = st.session_state.category
+    icons = {
+        "Network": "🌐",
+        "Login": "🔐",
+        "Printer": "🖨️"
+    }
+
+    st.success(f"{icons[category]} Predicted Category: {category}")
+    st.markdown("### Recommended troubleshooting steps")
+
+    for index, step in enumerate(solutions[category], start=1):
+        st.markdown(f"**{index}.** {step}")
+
+    st.info(
+        "This is an educational machine-learning prototype. "
+        "Its predictions may be incorrect. Verify the steps before acting."
+    )
+
+    if st.button("← Back to Problem Input"):
+        st.session_state.page = "home"
+        st.rerun()
+
+# ---------- Footer ----------
 st.divider()
-st.caption("Built with Python, Streamlit and scikit-learn")
+st.caption("Developed by Abdullah Aitah")
+st.caption("Built with Python · Streamlit · scikit-learn")
