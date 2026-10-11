@@ -3,231 +3,136 @@ import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics.pairwise import cosine_similarity
+import html
 
-# ==================================================
-# PAGE CONFIGURATION
-# ==================================================
 st.set_page_config(
-    page_title="IT Support | Help Center",
+    page_title="IT Support Assistant",
     page_icon="🛠️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ==================================================
-# PROFESSIONAL CUSTOMER-FACING DESIGN
-# ==================================================
+# -------------------- Professional design --------------------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-:root {
-    --bg: #0b1120;
-    --panel: #111d30;
-    --panel2: #15243a;
-    --border: #263b55;
-    --text: #edf4fc;
-    --muted: #a7bad0;
-    --accent: #38bdf8;
-}
-
 .stApp {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
+    background: #0b1120;
+    color: #edf4fc;
+    font-family: Inter, sans-serif;
 }
-
-header[data-testid="stHeader"] {
-    background: rgba(11,17,32,0.9);
-}
-
 [data-testid="stSidebar"] {
-    background: #0f192b;
-    border-right: 1px solid var(--border);
+    background: #101a2b;
+    border-right: 1px solid #263b55;
 }
-
-[data-testid="stSidebar"] * {
-    color: #dce8f7;
-}
-
 .block-container {
-    max-width: 1120px;
+    max-width: 1100px;
     padding-top: 2rem;
     padding-bottom: 3rem;
 }
-
 .hero {
-    background: linear-gradient(125deg, #142944 0%, #104464 100%);
+    background: linear-gradient(125deg, #142944, #104464);
     border: 1px solid #285273;
-    border-radius: 24px;
-    padding: 38px;
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
+    border-radius: 22px;
+    padding: 34px;
+    margin-bottom: 26px;
 }
-
-.eyebrow {
-    color: #7dd3fc;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-
 .hero h1 {
-    color: #ffffff;
-    font-size: clamp(30px, 4vw, 43px);
+    color: white;
+    font-size: 38px;
     font-weight: 800;
-    letter-spacing: -1px;
-    margin: 0 0 12px 0;
 }
-
 .hero p {
     color: #c3d7ea;
-    font-size: 16px;
     line-height: 1.8;
-    max-width: 650px;
-    margin-bottom: 0;
 }
-
 .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 24px;
-    margin: 16px 0;
+    background: #111d30;
+    border: 1px solid #263b55;
+    border-radius: 17px;
+    padding: 23px;
+    margin: 14px 0;
 }
-
-.area-card {
-    background: var(--panel2);
+.area {
+    background: #15243a;
     border: 1px solid #2b405c;
-    border-radius: 14px;
+    border-radius: 13px;
     padding: 17px;
-    min-height: 90px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
-
-.area-card strong {
-    color: #f1f7ff;
-    font-size: 14px;
-}
-
-.area-card p {
-    color: var(--muted);
-    font-size: 12px;
-    margin: 7px 0 0 0;
-}
-
-.result-card {
-    background: linear-gradient(135deg, #13253b, #102033);
-    border: 1px solid #2b4561;
-    border-radius: 18px;
-    padding: 24px;
-    margin: 15px 0;
-}
-
-.step-card {
+.area strong { color: #f1f7ff; }
+.area p { color: #a7bad0; font-size: 13px; margin-bottom: 0; }
+.step {
     background: #111e31;
     border: 1px solid #293e58;
     border-radius: 13px;
-    padding: 19px;
-    margin: 11px 0;
+    padding: 18px;
+    margin: 12px 0;
     line-height: 1.8;
+    color: #edf4fc;
 }
-
-.step-label {
+.step-number {
     color: #7dd3fc;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
 }
-
 div[data-testid="stTextArea"] textarea {
     background: #0e1a2d !important;
     color: #f8fafc !important;
     border: 1px solid #3b5675 !important;
     border-radius: 12px !important;
-    caret-color: #7dd3fc !important;
 }
-
-div[data-testid="stTextArea"] textarea:focus {
-    border: 2px solid #38bdf8 !important;
-    box-shadow: 0 0 0 2px #38bdf833 !important;
-}
-
-div[data-testid="stTextArea"] textarea::placeholder {
-    color: #8fa6c0 !important;
-}
-
-.stButton > button,
-.stFormSubmitButton > button {
+.stButton > button, .stFormSubmitButton > button {
     background: linear-gradient(90deg, #0284c7, #0369a1);
     color: white;
-    border: 1px solid #168bc5;
-    border-radius: 11px;
-    min-height: 46px;
+    border: 0;
+    border-radius: 10px;
+    min-height: 45px;
     font-weight: 700;
-    transition: 0.2s;
 }
-
-.stButton > button:hover,
-.stFormSubmitButton > button:hover {
+.stButton > button:hover, .stFormSubmitButton > button:hover {
     background: #0ea5e9;
     color: white;
-    border-color: #7dd3fc;
 }
-
-div[data-testid="stAlert"] {
-    border-radius: 12px;
-}
-
-h1, h2, h3, h4 {
-    color: #f1f7ff;
-}
-
 .footer {
     text-align: center;
     color: #91a5bd;
     border-top: 1px solid #24354c;
-    margin-top: 42px;
-    padding-top: 24px;
+    margin-top: 38px;
+    padding-top: 22px;
     font-size: 13px;
 }
-
+h1, h2, h3, h4 { color: #f1f7ff; }
 @media (max-width: 700px) {
-    .hero { padding: 24px; }
-    .panel { padding: 17px; }
+    .hero { padding: 22px; }
+    .hero h1 { font-size: 29px; }
+    .panel { padding: 16px; }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================================================
-# TRAINING EXAMPLES
-# ==================================================
+# -------------------- Knowledge base --------------------
 training_data = {
     "Network & Internet": [
         "My Wi-Fi is not working",
         "I have no internet connection",
         "The internet is very slow",
-        "I cannot connect to the router",
         "Websites are not loading",
         "I have a DNS error",
         "My computer has no IP address",
         "The network keeps disconnecting",
+        "Wi-Fi connected but no internet",
+        "My Ethernet connection is not working",
+        "My laptop cannot find Wi-Fi networks",
         "I cannot connect to the company network",
         "Internet works on my phone but not my laptop",
-        "Wi-Fi connected but no internet access",
-        "My Ethernet connection is not working",
-        "Some websites cannot be reached",
-        "My network connection keeps dropping",
         "I cannot access the network gateway",
-        "The internet stopped working after an update",
-        "My laptop cannot find any Wi-Fi networks",
-        "I get a network connection error"
+        "My connection drops every few minutes"
     ],
     "Login & Accounts": [
-        "I cannot login",
+        "I cannot log in",
         "My password is not working",
         "My account is locked",
         "I forgot my password",
@@ -236,15 +141,9 @@ training_data = {
         "My username is not recognized",
         "I cannot sign in to Windows",
         "I have no permission to open a file",
-        "My work account is unavailable",
-        "I keep getting an incorrect password message",
         "My account has been disabled",
-        "I cannot access a company resource",
-        "I am asked to sign in repeatedly",
-        "My login session keeps expiring",
-        "I cannot access my user profile",
-        "My account requires verification",
-        "I get an authentication error"
+        "I keep getting an incorrect password message",
+        "I am asked to sign in repeatedly"
     ],
     "Windows & Operating System": [
         "My computer is very slow",
@@ -257,13 +156,7 @@ training_data = {
         "My taskbar is not responding",
         "Windows update is stuck",
         "My computer crashes frequently",
-        "My PC takes too long to boot",
-        "Windows shows an error after startup",
-        "My desktop icons disappeared",
         "File Explorer is not responding",
-        "Windows settings will not open",
-        "My computer freezes randomly",
-        "Windows update is downloading forever",
         "My PC shuts down unexpectedly"
     ],
     "Software & Applications": [
@@ -277,14 +170,8 @@ training_data = {
         "My program is incompatible",
         "Office applications are not working",
         "The application closes unexpectedly",
-        "The app says a required file is missing",
-        "My software update failed",
-        "An application is running very slowly",
         "I cannot uninstall a program",
-        "The application needs administrator permission",
-        "My browser keeps crashing",
-        "The software shows a license error",
-        "My application is not responding"
+        "My browser keeps crashing"
     ],
     "Printers & Scanners": [
         "My printer is not working",
@@ -297,14 +184,8 @@ training_data = {
         "The print queue is stuck",
         "The printer driver is missing",
         "I cannot connect to the network printer",
-        "My printer prints very slowly",
-        "The printer says there is no paper",
-        "My scanned document is blank",
-        "The printer is showing an error code",
         "My printer is connected but not printing",
-        "Windows cannot find my printer",
-        "My printer prints the wrong pages",
-        "The scanner cannot connect to my computer"
+        "Windows cannot find my printer"
     ],
     "Hardware & Storage": [
         "My hard drive is not detected",
@@ -317,14 +198,8 @@ training_data = {
         "My USB device is not detected",
         "My computer runs out of memory",
         "My laptop battery drains quickly",
-        "My external hard drive is not showing",
-        "My computer makes unusual noises",
         "My laptop will not charge",
-        "My microphone is not detected",
-        "My computer has low disk space",
-        "My second monitor is not working",
-        "My laptop fan is very loud",
-        "My computer cannot detect a USB drive"
+        "My second monitor is not working"
     ],
     "Email & Communication": [
         "I cannot send emails",
@@ -337,14 +212,8 @@ training_data = {
         "My email keeps asking for a password",
         "Video calls have no sound",
         "My microphone is not working in meetings",
-        "Emails are going to spam",
-        "I cannot download email attachments",
         "My calendar is not synchronizing",
-        "Outlook keeps crashing",
-        "My emails are delayed",
-        "I cannot join a video meeting",
-        "My email signature is missing",
-        "I cannot open a shared mailbox"
+        "I cannot join a video meeting"
     ],
     "Security & VPN": [
         "My VPN will not connect",
@@ -353,76 +222,67 @@ training_data = {
         "I received a suspicious email",
         "My security certificate has expired",
         "The firewall blocks my application",
-        "I cannot connect securely to the network",
         "My VPN connection keeps dropping",
         "Windows Defender detected a threat",
         "I think my account has been compromised",
         "My VPN says authentication failed",
         "I received a suspicious attachment",
-        "My browser shows a certificate warning",
-        "I cannot access an internal website through VPN",
-        "My antivirus blocked a file",
-        "I think I clicked a phishing link",
-        "I received a fake password reset email",
-        "The VPN says connection timed out"
+        "I think I clicked a phishing link"
     ]
 }
 
-# ==================================================
-# TROUBLESHOOTING GUIDES
-# ==================================================
 solutions = {
     "Network & Internet": [
         "Check whether Wi-Fi is enabled and airplane mode is off.",
         "Check whether other devices can access the same network.",
         "Disconnect and reconnect to the network if possible.",
-        "On Windows, open Command Prompt and run ipconfig to inspect your network configuration.",
+        "On Windows, run ipconfig in Command Prompt to inspect network settings.",
         "If the issue continues, record the error message and contact IT Support."
     ],
     "Login & Accounts": [
         "Check your username, keyboard layout and Caps Lock.",
-        "Confirm that the sign-in page or service is available.",
-        "Use your organization's official password-reset process if necessary.",
+        "Use your organization's official password-reset process if needed.",
+        "Check whether the service is available.",
         "Never share your password or verification codes.",
-        "For locked accounts or missing permissions, contact IT Support."
+        "Contact IT Support for locked accounts or permission problems."
     ],
     "Windows & Operating System": [
-        "Save your work and restart the computer if it is safe to do so.",
+        "Save your work and restart the computer if safe.",
         "Check available disk space and pending Windows updates.",
         "Record any error code or blue-screen message.",
         "Avoid recovery operations if you are unsure of their effects.",
-        "If startup fails repeatedly, contact IT Support."
+        "Contact IT Support if startup failures or crashes continue."
     ],
     "Software & Applications": [
-        "Close the application completely and open it again.",
+        "Close the application completely and reopen it.",
         "Check whether the issue affects only this application.",
         "Check for approved application updates.",
-        "Record the exact error message and when it appears.",
-        "If the problem continues, contact IT Support with the error details."
+        "Record the exact error message.",
+        "Contact IT Support if the problem continues."
     ],
     "Printers & Scanners": [
         "Check power, cables, Wi-Fi and the printer display.",
         "Confirm that the correct printer is selected.",
-        "Check paper, toner and whether the print queue is paused.",
-        "Try a test page if your organization permits it.",
-        "If the device remains unavailable, ask IT Support to check the driver and connection."
+        "Check paper, toner and the print queue.",
+        "Try a test page if permitted by your organization.",
+        "Contact IT Support if the driver or connection may be faulty."
     ],
     "Hardware & Storage": [
         "Check power, cables and device connections.",
-        "Close unused applications and inspect available storage.",
+        "Inspect available storage and close unused applications.",
         "Keep ventilation openings clear if the device is overheating.",
         "Back up important files when possible.",
-        "For persistent hardware problems, contact IT Support."
+        "Contact IT Support for persistent hardware problems."
     ],
     "Email & Communication": [
-        "Check your internet connection and whether the email service is available.",
+        "Check your internet connection and email service availability.",
         "Verify the recipient address and attachment size.",
-        "Restart the email application and check for approved updates.",
+        "Restart the email application and check approved updates.",
         "For meeting audio issues, check the selected microphone and speakers.",
         "Never share your password; contact IT Support if sign-in keeps failing."
     ],
     "Security & VPN": [
-        "Use only your organization's official VPN application and instructions.",
+        "Use only your organization's official VPN application.",
         "Check your internet connection and VPN account authorization.",
         "Do not open suspicious links or attachments.",
         "Never disable antivirus or firewall protection to bypass an error.",
@@ -430,46 +290,36 @@ solutions = {
     ]
 }
 
-# ==================================================
-# SEARCH AND CLASSIFICATION
-# ==================================================
-problems = []
-categories = []
+# -------------------- Search model --------------------
+problems, categories = [], []
 
 for category, examples in training_data.items():
     problems.extend(examples)
     categories.extend([category] * len(examples))
 
-search_vectorizer = TfidfVectorizer(
+vectorizer = TfidfVectorizer(
     ngram_range=(1, 2),
     strip_accents="unicode",
     sublinear_tf=True,
     stop_words="english"
 )
-problem_matrix = search_vectorizer.fit_transform(problems)
+problem_matrix = vectorizer.fit_transform(problems)
 
 classifier = LogisticRegression(max_iter=1500)
 classifier.fit(problem_matrix, categories)
 
-# ==================================================
-# SESSION STATE
-# ==================================================
-defaults = {
+# -------------------- Session state --------------------
+for key, value in {
     "page": "home",
     "problem": "",
     "category": "",
     "solution": [],
-    "similarity": 0.0,
     "low_match": False
-}
-
-for key, value in defaults.items():
+}.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-# ==================================================
-# SIDEBAR
-# ==================================================
+# -------------------- Sidebar --------------------
 with st.sidebar:
     st.markdown("## 🛠️ IT Support")
     st.caption("Customer Help Center")
@@ -481,26 +331,22 @@ with st.sidebar:
 
     st.markdown("### Support services")
     st.markdown("""
-    🌐 **Network & Internet**
+    🌐 Network & Internet
 
-    🔐 **Account Access**
+    🔐 Account Access
 
-    🖥️ **Windows & Software**
+    🖥️ Windows & Software
 
-    🖨️ **Printers & Scanners**
+    🖨️ Printers & Scanners
 
-    💾 **Hardware**
+    💾 Hardware
 
-    ✉️ **Email & Communication**
+    ✉️ Email & Communication
 
-    🛡️ **Security & VPN**
+    🛡️ Security & VPN
     """)
-    st.divider()
-    st.caption("Need more help? Contact your IT department.")
 
-# ==================================================
-# HEADER
-# ==================================================
+# -------------------- Header --------------------
 st.markdown("""
 <div class="hero">
     <div class="eyebrow">CUSTOMER SUPPORT CENTER</div>
@@ -512,9 +358,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ==================================================
-# HOME PAGE
-# ==================================================
+# -------------------- Home page --------------------
 if st.session_state.page == "home":
     st.markdown("""
     <div class="panel">
@@ -526,59 +370,39 @@ if st.session_state.page == "home":
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2 = st.columns(2)
+    left, right = st.columns(2)
 
-    with c1:
+    with left:
         st.markdown("""
-        <div class="area-card">
-            <strong>🌐 Connectivity</strong>
-            <p>Wi-Fi, internet and network access</p>
-        </div>
-        <div class="area-card">
-            <strong>🔐 Account access</strong>
-            <p>Login, passwords and permissions</p>
-        </div>
-        <div class="area-card">
-            <strong>🖨️ Office equipment</strong>
-            <p>Printers, scanners and peripherals</p>
-        </div>
-        <div class="area-card">
-            <strong>🛡️ Security</strong>
-            <p>VPN access and suspicious activity</p>
-        </div>
+        <div class="area"><strong>🌐 Connectivity</strong>
+        <p>Wi-Fi, internet and network access</p></div>
+        <div class="area"><strong>🔐 Account access</strong>
+        <p>Login, passwords and permissions</p></div>
+        <div class="area"><strong>🖨️ Office equipment</strong>
+        <p>Printers, scanners and peripherals</p></div>
+        <div class="area"><strong>🛡️ Security</strong>
+        <p>VPN access and suspicious activity</p></div>
         """, unsafe_allow_html=True)
 
-    with c2:
+    with right:
         st.markdown("""
-        <div class="area-card">
-            <strong>🖥️ Windows</strong>
-            <p>Startup, updates and system errors</p>
-        </div>
-        <div class="area-card">
-            <strong>🧩 Applications</strong>
-            <p>Software errors and crashes</p>
-        </div>
-        <div class="area-card">
-            <strong>💾 Hardware</strong>
-            <p>Storage, displays and devices</p>
-        </div>
-        <div class="area-card">
-            <strong>✉️ Communication</strong>
-            <p>Email, calendars and online meetings</p>
-        </div>
+        <div class="area"><strong>🖥️ Windows</strong>
+        <p>Startup, updates and system errors</p></div>
+        <div class="area"><strong>🧩 Applications</strong>
+        <p>Software errors and crashes</p></div>
+        <div class="area"><strong>💾 Hardware</strong>
+        <p>Storage, displays and devices</p></div>
+        <div class="area"><strong>✉️ Communication</strong>
+        <p>Email, calendars and online meetings</p></div>
         """, unsafe_allow_html=True)
 
-    st.markdown("## Tell us what happened")
+    st.markdown("## Describe your issue")
 
     with st.form("problem_form"):
         user_problem = st.text_area(
             "Problem description",
-            placeholder=(
-                "Example: My laptop connects to Wi-Fi, "
-                "but I cannot open any websites..."
-            ),
-            height=145,
-            help="Describe what happened and include any error message."
+            placeholder="Example: My laptop connects to Wi-Fi, but websites do not load...",
+            height=145
         )
         submitted = st.form_submit_button(
             "Find a solution  →",
@@ -587,73 +411,63 @@ if st.session_state.page == "home":
 
     if submitted:
         if len(user_problem.strip()) < 5:
-            st.warning("Please provide a little more detail about the issue.")
+            st.warning("Please describe your issue in a little more detail.")
         else:
-            query_vector = search_vectorizer.transform(
-                [user_problem.strip()]
-            )
-            similarities = cosine_similarity(
-                query_vector, problem_matrix
-            ).flatten()
-
+            query = vectorizer.transform([user_problem.strip()])
+            similarities = cosine_similarity(query, problem_matrix).flatten()
             best_index = int(similarities.argmax())
-            best_similarity = float(similarities[best_index])
-            predicted_category = classifier.predict(query_vector)[0]
+            best_score = float(similarities[best_index])
+            predicted_category = classifier.predict(query)[0]
 
-            if best_similarity >= 0.08:
-                category = categories[best_index]
-            else:
-                category = predicted_category
+            category = (
+                categories[best_index]
+                if best_score >= 0.08
+                else predicted_category
+            )
 
             st.session_state.problem = user_problem.strip()
             st.session_state.category = category
             st.session_state.solution = solutions[category]
-            st.session_state.similarity = best_similarity
-            st.session_state.low_match = best_similarity < 0.08
+            st.session_state.low_match = best_score < 0.08
             st.session_state.page = "solution"
             st.rerun()
 
-# ==================================================
-# RESULTS PAGE
-# ==================================================
+# -------------------- Results page --------------------
 elif st.session_state.page == "solution":
     st.markdown("## Your Support Results")
-    st.caption("Review the suggested steps below to troubleshoot your issue.")
+    st.caption("Review the recommended steps for your issue.")
 
-    st.markdown("""
-    <div class="result-card">
-        <div class="eyebrow">ISSUE REPORTED</div>
+    safe_problem = html.escape(st.session_state.problem)
+    st.markdown(f"""
+    <div class="panel">
+        <div class="eyebrow">YOUR REPORTED ISSUE</div>
+        <p style="color:#edf4fc;">{safe_problem}</p>
     </div>
     """, unsafe_allow_html=True)
-    st.write(st.session_state.problem)
 
-    st.markdown('<div class="result-card">', unsafe_allow_html=True)
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
     st.markdown("### Issue category")
     st.subheader(st.session_state.category)
     st.markdown("</div>", unsafe_allow_html=True)
 
     if st.session_state.low_match:
         st.warning(
-            "We could not find a strong match for this issue. "
-            "The suggested category may not be correct. Try adding "
-            "the device name and the exact error message."
+            "We could not find a strong match. The suggested category may "
+            "not be correct. Try adding your device name and exact error."
         )
 
     st.markdown("## Recommended next steps")
 
     for index, step in enumerate(st.session_state.solution, start=1):
-        st.markdown(
-            f"""
-            <div class="step-card">
-                <div class="step-label">STEP {index:02d}</div>
-                <div style="color:#edf4fc; margin-top:8px;">{step}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class="step">
+            <div class="step-number">STEP {index:02d}</div>
+            <div style="margin-top:8px;">{html.escape(step)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.info(
-        "These steps are general guidance, not a confirmed diagnosis. "
+        "These suggestions are general guidance, not a confirmed diagnosis. "
         "Follow your organization's IT policies."
     )
 
@@ -661,12 +475,11 @@ elif st.session_state.page == "solution":
         st.session_state.page = "home"
         st.rerun()
 
-# ==================================================
-# FOOTER
-# ==================================================
+# -------------------- Footer --------------------
 st.markdown("""
 <div class="footer">
     <strong>Developed by Abdullah Aitah</strong><br>
     Customer IT Support
 </div>
 """, unsafe_allow_html=True)
+
