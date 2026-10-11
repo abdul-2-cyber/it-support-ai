@@ -1,10 +1,14 @@
 
+
 import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics.pairwise import cosine_similarity
 import html
 
+# ==================================================
+# PAGE CONFIGURATION
+# ==================================================
 st.set_page_config(
     page_title="IT Support Assistant",
     page_icon="🛠️",
@@ -12,25 +16,56 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# -------------------- Professional design --------------------
+# ==================================================
+# HIDE STREAMLIT TOOLBAR WHERE SUPPORTED
+# ==================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+header[data-testid="stHeader"] {
+    display: none !important;
+    visibility: hidden !important;
+}
 
+[data-testid="stToolbar"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+#MainMenu {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+[data-testid="stAppDeployButton"] {
+    display: none !important;
+}
+
+footer {
+    visibility: hidden !important;
+}
+
+/* Customer-facing design */
 .stApp {
     background: #0b1120;
     color: #edf4fc;
-    font-family: Inter, sans-serif;
+    font-family: Arial, sans-serif;
 }
+
 [data-testid="stSidebar"] {
     background: #101a2b;
     border-right: 1px solid #263b55;
 }
+
 .block-container {
     max-width: 1100px;
     padding-top: 2rem;
     padding-bottom: 3rem;
 }
+
 .hero {
     background: linear-gradient(125deg, #142944, #104464);
     border: 1px solid #285273;
@@ -38,15 +73,18 @@ st.markdown("""
     padding: 34px;
     margin-bottom: 26px;
 }
+
 .hero h1 {
-    color: white;
+    color: #ffffff;
     font-size: 38px;
     font-weight: 800;
 }
+
 .hero p {
     color: #c3d7ea;
     line-height: 1.8;
 }
+
 .panel {
     background: #111d30;
     border: 1px solid #263b55;
@@ -54,6 +92,7 @@ st.markdown("""
     padding: 23px;
     margin: 14px 0;
 }
+
 .area {
     background: #15243a;
     border: 1px solid #2b405c;
@@ -61,8 +100,17 @@ st.markdown("""
     padding: 17px;
     margin-bottom: 12px;
 }
-.area strong { color: #f1f7ff; }
-.area p { color: #a7bad0; font-size: 13px; margin-bottom: 0; }
+
+.area strong {
+    color: #f1f7ff;
+}
+
+.area p {
+    color: #a7bad0;
+    font-size: 13px;
+    margin-bottom: 0;
+}
+
 .step {
     background: #111e31;
     border: 1px solid #293e58;
@@ -72,19 +120,23 @@ st.markdown("""
     line-height: 1.8;
     color: #edf4fc;
 }
+
 .step-number {
     color: #7dd3fc;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
 }
+
 div[data-testid="stTextArea"] textarea {
     background: #0e1a2d !important;
     color: #f8fafc !important;
     border: 1px solid #3b5675 !important;
     border-radius: 12px !important;
 }
-.stButton > button, .stFormSubmitButton > button {
+
+.stButton > button,
+.stFormSubmitButton > button {
     background: linear-gradient(90deg, #0284c7, #0369a1);
     color: white;
     border: 0;
@@ -92,10 +144,17 @@ div[data-testid="stTextArea"] textarea {
     min-height: 45px;
     font-weight: 700;
 }
-.stButton > button:hover, .stFormSubmitButton > button:hover {
+
+.stButton > button:hover,
+.stFormSubmitButton > button:hover {
     background: #0ea5e9;
     color: white;
 }
+
+h1, h2, h3, h4 {
+    color: #f1f7ff;
+}
+
 .footer {
     text-align: center;
     color: #91a5bd;
@@ -104,16 +163,26 @@ div[data-testid="stTextArea"] textarea {
     padding-top: 22px;
     font-size: 13px;
 }
-h1, h2, h3, h4 { color: #f1f7ff; }
+
 @media (max-width: 700px) {
-    .hero { padding: 22px; }
-    .hero h1 { font-size: 29px; }
-    .panel { padding: 16px; }
+    .hero {
+        padding: 22px;
+    }
+
+    .hero h1 {
+        font-size: 29px;
+    }
+
+    .panel {
+        padding: 16px;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- Knowledge base --------------------
+# ==================================================
+# TRAINING DATA
+# ==================================================
 training_data = {
     "Network & Internet": [
         "My Wi-Fi is not working",
@@ -231,6 +300,9 @@ training_data = {
     ]
 }
 
+# ==================================================
+# TROUBLESHOOTING GUIDES
+# ==================================================
 solutions = {
     "Network & Internet": [
         "Check whether Wi-Fi is enabled and airplane mode is off.",
@@ -290,8 +362,11 @@ solutions = {
     ]
 }
 
-# -------------------- Search model --------------------
-problems, categories = [], []
+# ==================================================
+# SEARCH MODEL
+# ==================================================
+problems = []
+categories = []
 
 for category, examples in training_data.items():
     problems.extend(examples)
@@ -303,23 +378,30 @@ vectorizer = TfidfVectorizer(
     sublinear_tf=True,
     stop_words="english"
 )
+
 problem_matrix = vectorizer.fit_transform(problems)
 
 classifier = LogisticRegression(max_iter=1500)
 classifier.fit(problem_matrix, categories)
 
-# -------------------- Session state --------------------
-for key, value in {
+# ==================================================
+# SESSION STATE
+# ==================================================
+defaults = {
     "page": "home",
     "problem": "",
     "category": "",
     "solution": [],
     "low_match": False
-}.items():
+}
+
+for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-# -------------------- Sidebar --------------------
+# ==================================================
+# SIDEBAR
+# ==================================================
 with st.sidebar:
     st.markdown("## 🛠️ IT Support")
     st.caption("Customer Help Center")
@@ -346,10 +428,15 @@ with st.sidebar:
     🛡️ Security & VPN
     """)
 
-# -------------------- Header --------------------
+# ==================================================
+# HEADER
+# ==================================================
 st.markdown("""
 <div class="hero">
-    <div class="eyebrow">CUSTOMER SUPPORT CENTER</div>
+    <div style="color:#7dd3fc;font-size:12px;font-weight:700;
+                letter-spacing:2px;margin-bottom:12px;">
+        CUSTOMER SUPPORT CENTER
+    </div>
     <h1>IT Support Assistant</h1>
     <p>
         Technical support made simpler. Describe your issue and
@@ -358,12 +445,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# -------------------- Home page --------------------
+# ==================================================
+# HOME PAGE
+# ==================================================
 if st.session_state.page == "home":
     st.markdown("""
     <div class="panel">
         <h3 style="color:#ffffff;">How can we help you today?</h3>
-        <p style="color:#a7bad0; line-height:1.8;">
+        <p style="color:#a7bad0;line-height:1.8;">
             Describe the technical issue you are experiencing.
             Include any error message if one appears.
         </p>
@@ -414,7 +503,10 @@ if st.session_state.page == "home":
             st.warning("Please describe your issue in a little more detail.")
         else:
             query = vectorizer.transform([user_problem.strip()])
-            similarities = cosine_similarity(query, problem_matrix).flatten()
+            similarities = cosine_similarity(
+                query, problem_matrix
+            ).flatten()
+
             best_index = int(similarities.argmax())
             best_score = float(similarities[best_index])
             predicted_category = classifier.predict(query)[0]
@@ -432,15 +524,21 @@ if st.session_state.page == "home":
             st.session_state.page = "solution"
             st.rerun()
 
-# -------------------- Results page --------------------
+# ==================================================
+# RESULTS PAGE
+# ==================================================
 elif st.session_state.page == "solution":
     st.markdown("## Your Support Results")
     st.caption("Review the recommended steps for your issue.")
 
     safe_problem = html.escape(st.session_state.problem)
+
     st.markdown(f"""
     <div class="panel">
-        <div class="eyebrow">YOUR REPORTED ISSUE</div>
+        <div style="color:#7dd3fc;font-size:12px;font-weight:700;
+                    letter-spacing:1px;margin-bottom:12px;">
+            YOUR REPORTED ISSUE
+        </div>
         <p style="color:#edf4fc;">{safe_problem}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -475,11 +573,12 @@ elif st.session_state.page == "solution":
         st.session_state.page = "home"
         st.rerun()
 
-# -------------------- Footer --------------------
+# ==================================================
+# FOOTER
+# ==================================================
 st.markdown("""
 <div class="footer">
     <strong>Developed by Abdullah Aitah</strong><br>
     Customer IT Support
 </div>
 """, unsafe_allow_html=True)
-
