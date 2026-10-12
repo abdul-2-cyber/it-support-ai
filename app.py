@@ -1,471 +1,504 @@
 
 
 
-import html
 import streamlit as st
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.pipeline import Pipeline
 
-# =====================================================
-# PAGE CONFIGURATION
-# =====================================================
+# --------------------------------------------------
+# Page configuration
+# --------------------------------------------------
+
 st.set_page_config(
-    page_title="IT Support Assistant",
-    page_icon="🛠️",
+    page_title="IT Support AI",
+    page_icon="💻",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
-# =====================================================
-# TRANSLATIONS
-# =====================================================
-TEXT = {
-    "en": {
-        "language": "Language / Sprache",
-        "title": "IT Support Assistant",
-        "eyebrow": "CUSTOMER SUPPORT CENTER",
-        "tagline": "Technical support made simpler.",
-        "description": (
-            "Describe your technical issue and receive practical "
-            "guidance to help you resolve it."
-        ),
-        "question": "How can we help you today?",
-        "instructions": (
-            "Describe the technical issue you are experiencing. "
-            "Include any error message if one appears."
-        ),
-        "problem_label": "Problem description",
-        "placeholder": (
-            "Example: My laptop connects to Wi-Fi, "
-            "but websites do not load..."
-        ),
-        "button": "Find a solution →",
-        "short_error": "Please describe your issue in a little more detail.",
-        "results": "Your Support Results",
-        "results_desc": "Review the recommended steps for your issue.",
-        "reported": "YOUR REPORTED ISSUE",
-        "category": "Issue category",
-        "steps": "Recommended next steps",
-        "low_match": (
-            "We could not find a strong match. The suggested category "
-            "may not be correct. Try adding your device name and exact error."
-        ),
-        "disclaimer": (
-            "These suggestions are general guidance, not a confirmed "
-            "diagnosis. Follow your organization's IT policies."
-        ),
-        "back": "← Report another issue",
-        "footer": "Customer IT Support",
-        "home": "Home",
-        "invalid": "Please enter a description of your problem.",
-        "categories": {
-            "Network & Internet": "Network & Internet",
-            "Login & Accounts": "Login & Accounts",
-            "Windows & Operating System": "Windows & Operating System",
-            "Software & Applications": "Software & Applications",
-            "Printers & Scanners": "Printers & Scanners",
-            "Hardware & Storage": "Hardware & Storage",
-            "Email & Communication": "Email & Communication",
-            "Security & VPN": "Security & VPN"
-        }
-    },
-    "de": {
-        "language": "Sprache / Language",
-        "title": "IT-Support-Assistent",
-        "eyebrow": "KUNDENSUPPORT",
-        "tagline": "Technischer Support – einfach und verständlich.",
-        "description": (
-            "Beschreiben Sie Ihr technisches Problem und erhalten Sie "
-            "praktische Hinweise zur Fehlerbehebung."
-        ),
-        "question": "Wie können wir Ihnen heute helfen?",
-        "instructions": (
-            "Beschreiben Sie Ihr technisches Problem. "
-            "Geben Sie, wenn möglich, auch die Fehlermeldung an."
-        ),
-        "problem_label": "Problembeschreibung",
-        "placeholder": (
-            "Beispiel: Mein Laptop verbindet sich mit dem WLAN, "
-            "aber Webseiten werden nicht geladen ..."
-        ),
-        "button": "Lösung finden →",
-        "short_error": "Bitte beschreiben Sie Ihr Problem etwas genauer.",
-        "results": "Ihre Support-Ergebnisse",
-        "results_desc": "Hier finden Sie empfohlene Schritte zur Fehlerbehebung.",
-        "reported": "BESCHRIEBENES PROBLEM",
-        "category": "Problemkategorie",
-        "steps": "Empfohlene nächste Schritte",
-        "low_match": (
-            "Es wurde keine ausreichend passende Beschreibung gefunden. "
-            "Die vorgeschlagene Kategorie kann falsch sein. "
-            "Ergänzen Sie den Gerätenamen und die genaue Fehlermeldung."
-        ),
-        "disclaimer": (
-            "Diese Hinweise sind allgemeine Empfehlungen und keine "
-            "bestätigte Diagnose. Beachten Sie die IT-Richtlinien "
-            "Ihres Unternehmens."
-        ),
-        "back": "← Weiteres Problem melden",
-        "footer": "IT-Kundensupport",
-        "home": "Startseite",
-        "invalid": "Bitte beschreiben Sie Ihr technisches Problem.",
-        "categories": {
-            "Network & Internet": "Netzwerk & Internet",
-            "Login & Accounts": "Anmeldung & Konten",
-            "Windows & Operating System": "Windows & Betriebssystem",
-            "Software & Applications": "Software & Anwendungen",
-            "Printers & Scanners": "Drucker & Scanner",
-            "Hardware & Storage": "Hardware & Speicher",
-            "Email & Communication": "E-Mail & Kommunikation",
-            "Security & VPN": "Sicherheit & VPN"
-        }
-    }
+# --------------------------------------------------
+# Styling
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #07111f 0%, #101e35 55%, #0a1424 100%);
+    color: #f1f5f9;
 }
 
-# =====================================================
-# BILINGUAL TRAINING EXAMPLES
-# =====================================================
+.block-container {
+    max-width: 1100px;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.hero {
+    background: linear-gradient(135deg, #142b49, #102039);
+    border: 1px solid #294363;
+    border-radius: 18px;
+    padding: 32px;
+    margin-bottom: 26px;
+}
+
+.hero h1 {
+    color: #ffffff;
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.hero p {
+    color: #c2d1e3;
+    font-size: 1.05rem;
+}
+
+.section-card {
+    background: #111f33;
+    border: 1px solid #263b56;
+    border-radius: 14px;
+    padding: 20px;
+    min-height: 125px;
+    margin-bottom: 12px;
+}
+
+.section-card h3 {
+    color: #eaf2ff;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+
+.section-card p {
+    color: #a9bad0;
+    font-size: 0.92rem;
+}
+
+.result-card {
+    background: #111f33;
+    border: 1px solid #294363;
+    border-radius: 14px;
+    padding: 24px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.footer {
+    text-align: center;
+    color: #8295ad;
+    border-top: 1px solid #26364b;
+    padding-top: 20px;
+    margin-top: 40px;
+    font-size: 0.85rem;
+}
+
+.stTextArea textarea {
+    background-color: #0d192a !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334b69 !important;
+    border-radius: 10px !important;
+}
+
+div.stButton > button {
+    background: #2477e8;
+    color: white;
+    border: none;
+    border-radius: 9px;
+    padding: 0.65rem 1.2rem;
+    font-weight: 600;
+}
+
+div.stButton > button:hover {
+    background: #3989f5;
+    color: white;
+    border: none;
+}
+
+h2, h3 {
+    color: #f1f5f9;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# Language selection
+# --------------------------------------------------
+
+if "language" not in st.session_state:
+    st.session_state.language = "English"
+
+language = st.selectbox(
+    "Language / Sprache",
+    ["English", "Deutsch"],
+    index=0 if st.session_state.language == "English" else 1,
+    key="language_selector",
+)
+
+st.session_state.language = language
+is_german = language == "Deutsch"
+
+TEXT = {
+    "title": "Wie können wir helfen?" if is_german
+             else "How can we help you?",
+    "description": (
+        "Beschreibe dein IT-Problem. Die KI ordnet es einer Kategorie zu "
+        "und schlägt mögliche Lösungen vor."
+        if is_german else
+        "Describe your technical issue. The AI will predict a category "
+        "and suggest possible troubleshooting steps."
+    ),
+    "categories": "IT-Support-Kategorien" if is_german
+                  else "IT Support Categories",
+    "input_title": "Beschreibe dein Problem" if is_german
+                   else "Describe Your Problem",
+    "placeholder": "Zum Beispiel: Ich kann keine Verbindung zum WLAN herstellen."
+                   if is_german else
+                   "For example: I cannot connect to the Wi-Fi.",
+    "analyze": "Problem analysieren" if is_german else "Analyze Problem",
+    "empty": "Bitte beschreibe zuerst dein Problem." if is_german
+             else "Please describe your problem first.",
+    "result": "Analyseergebnis" if is_german else "Analysis Result",
+    "category": "Erkannte Kategorie" if is_german else "Predicted Category",
+    "solutions": "Lösungsvorschläge" if is_german else "Suggested Solutions",
+    "confidence": "Modell-Konfidenz" if is_german else "Model Confidence",
+    "back": "Zurück zur Startseite" if is_german else "Back to Home",
+    "footer": "Entwickelt von Abdullah Aitah" if is_german
+              else "Developed by Abdullah Aitah",
+}
+
+# --------------------------------------------------
+# Training examples
+# --------------------------------------------------
+
 training_data = {
     "Network & Internet": [
-        "My Wi-Fi is not working",
-        "I have no internet connection",
-        "The internet is very slow",
-        "Websites are not loading",
+        "my wifi is not working",
+        "I cannot connect to the internet",
+        "internet connection keeps dropping",
+        "network is unavailable",
+        "my computer cannot connect to wifi",
+        "wifi says connected but there is no internet",
+        "the ethernet connection is not working",
+        "my internet is very slow",
         "I have a DNS error",
-        "My computer has no IP address",
-        "The network keeps disconnecting",
-        "Wi-Fi connected but no internet",
-        "I cannot connect to the company network",
-        "Internet works on my phone but not my laptop",
-        "Mein WLAN funktioniert nicht",
-        "Ich habe keine Internetverbindung",
-        "Das Internet ist sehr langsam",
-        "Webseiten werden nicht geladen",
+        "the network adapter is not working",
+        "Ich habe keine WLAN-Verbindung",
+        "Mein Internet funktioniert nicht",
+        "Die Internetverbindung bricht ständig ab",
+        "Mein WLAN ist sehr langsam",
+        "Mein Computer findet das Netzwerk nicht",
         "Ich habe einen DNS-Fehler",
-        "Mein Computer hat keine IP-Adresse",
-        "Die Netzwerkverbindung bricht ständig ab",
-        "WLAN verbunden, aber kein Internet",
-        "Ich kann mich nicht mit dem Firmennetzwerk verbinden",
-        "Das Internet funktioniert auf dem Handy, aber nicht am Laptop"
     ],
     "Login & Accounts": [
-        "I cannot log in",
-        "My password is not working",
-        "My account is locked",
+        "I cannot log in to my account",
+        "my password is not working",
         "I forgot my password",
-        "Access is denied",
-        "I cannot access a shared folder",
-        "My username is not recognized",
+        "my account is locked",
+        "login failed",
+        "I cannot access my user account",
+        "I am getting an authentication error",
+        "my account credentials are incorrect",
         "I cannot sign in to Windows",
-        "My account has been disabled",
-        "I am asked to sign in repeatedly",
+        "my account is disabled",
         "Ich kann mich nicht anmelden",
         "Mein Passwort funktioniert nicht",
-        "Mein Konto ist gesperrt",
         "Ich habe mein Passwort vergessen",
-        "Zugriff verweigert",
-        "Ich kann nicht auf einen freigegebenen Ordner zugreifen",
-        "Mein Benutzername wird nicht erkannt",
-        "Ich kann mich nicht bei Windows anmelden",
-        "Mein Konto wurde deaktiviert",
-        "Ich muss mich ständig neu anmelden"
+        "Mein Konto wurde gesperrt",
+        "Die Anmeldung ist fehlgeschlagen",
+        "Ich kann nicht auf mein Benutzerkonto zugreifen",
     ],
     "Windows & Operating System": [
-        "My computer is very slow",
+        "my computer is running very slowly",
+        "Windows keeps crashing",
+        "my computer has a blue screen",
         "Windows update failed",
-        "My PC shows a blue screen",
+        "my computer freezes randomly",
         "Windows will not start",
-        "My computer keeps restarting",
-        "Windows is frozen",
-        "My taskbar is not responding",
-        "Windows update is stuck",
-        "My computer crashes frequently",
-        "File Explorer is not responding",
+        "my system keeps restarting",
+        "I have an operating system error",
+        "my computer takes too long to boot",
+        "Windows is not responding",
         "Mein Computer ist sehr langsam",
+        "Windows stürzt ständig ab",
+        "Mein Computer zeigt einen Bluescreen",
         "Das Windows-Update ist fehlgeschlagen",
-        "Mein PC zeigt einen Bluescreen",
+        "Mein Computer friert ständig ein",
         "Windows startet nicht",
-        "Mein Computer startet ständig neu",
-        "Windows ist eingefroren",
-        "Meine Taskleiste reagiert nicht",
-        "Das Windows-Update hängt",
-        "Mein Computer stürzt häufig ab",
-        "Der Datei-Explorer reagiert nicht"
     ],
     "Software & Applications": [
-        "My application will not open",
-        "The program keeps crashing",
-        "I cannot install software",
-        "The application shows an error",
-        "My browser is not responding",
-        "The software installation failed",
-        "An application freezes every time",
-        "My program is incompatible",
-        "Office applications are not working",
-        "The application closes unexpectedly",
-        "Meine Anwendung lässt sich nicht öffnen",
-        "Das Programm stürzt ständig ab",
-        "Ich kann keine Software installieren",
-        "Die Anwendung zeigt einen Fehler",
-        "Mein Browser reagiert nicht",
+        "an application will not open",
+        "my software keeps crashing",
+        "I cannot install a program",
+        "an application is not responding",
+        "the software installation failed",
+        "my application shows an error message",
+        "a program is running slowly",
+        "I cannot uninstall an application",
+        "my software is incompatible",
+        "an application closes unexpectedly",
+        "Ein Programm lässt sich nicht öffnen",
+        "Meine Software stürzt ständig ab",
+        "Ich kann kein Programm installieren",
+        "Eine Anwendung reagiert nicht",
         "Die Softwareinstallation ist fehlgeschlagen",
-        "Eine Anwendung friert ständig ein",
-        "Mein Programm ist nicht kompatibel",
-        "Office-Anwendungen funktionieren nicht",
-        "Die Anwendung schließt sich unerwartet"
+        "Ein Programm zeigt eine Fehlermeldung",
     ],
     "Printers & Scanners": [
-        "My printer is not working",
-        "The printer is offline",
-        "I cannot print documents",
-        "The printer has a paper jam",
-        "My printer is not detected",
-        "The scanner is not working",
-        "My printer prints blank pages",
-        "The print queue is stuck",
-        "The printer driver is missing",
-        "I cannot connect to the network printer",
+        "my printer is not working",
+        "the printer is offline",
+        "my printer will not print",
+        "the printer has a paper jam",
+        "my scanner is not detected",
+        "printer driver installation failed",
+        "my printer prints blank pages",
+        "documents are stuck in the print queue",
+        "the printer is not connected",
+        "my printer has a connection error",
         "Mein Drucker funktioniert nicht",
         "Der Drucker ist offline",
-        "Ich kann keine Dokumente drucken",
-        "Der Drucker hat einen Papierstau",
-        "Mein Drucker wird nicht erkannt",
-        "Der Scanner funktioniert nicht",
-        "Mein Drucker druckt leere Seiten",
-        "Die Druckwarteschlange hängt",
-        "Der Druckertreiber fehlt",
-        "Ich kann mich nicht mit dem Netzwerkdrucker verbinden"
+        "Mein Drucker druckt nicht",
+        "Das Papier steckt im Drucker fest",
+        "Mein Scanner wird nicht erkannt",
+        "Die Druckertreiberinstallation ist fehlgeschlagen",
     ],
     "Hardware & Storage": [
-        "My hard drive is not detected",
-        "My disk is full",
-        "My laptop is overheating",
-        "My computer has no sound",
-        "My keyboard is not working",
-        "My mouse is not responding",
-        "My monitor shows no signal",
-        "My USB device is not detected",
-        "My laptop battery drains quickly",
-        "My laptop will not charge",
+        "my computer does not turn on",
+        "my hard drive is not detected",
+        "my USB device is not recognized",
+        "my computer is overheating",
+        "my keyboard is not working",
+        "my mouse is not working",
+        "I am running out of disk space",
+        "my monitor shows no signal",
+        "my laptop battery is not charging",
+        "my computer makes strange noises",
+        "Mein Computer lässt sich nicht einschalten",
         "Meine Festplatte wird nicht erkannt",
-        "Meine Festplatte ist voll",
-        "Mein Laptop überhitzt",
-        "Mein Computer hat keinen Ton",
-        "Meine Tastatur funktioniert nicht",
-        "Meine Maus reagiert nicht",
-        "Mein Monitor zeigt kein Signal",
         "Mein USB-Gerät wird nicht erkannt",
-        "Der Laptop-Akku ist schnell leer",
-        "Mein Laptop lädt nicht"
+        "Mein Computer überhitzt",
+        "Meine Tastatur funktioniert nicht",
+        "Meine Maus funktioniert nicht",
+        "Mein Speicherplatz ist fast voll",
+        "Mein Monitor zeigt kein Signal",
     ],
     "Email & Communication": [
         "I cannot send emails",
         "I am not receiving emails",
+        "my email account is not syncing",
         "Outlook will not open",
-        "Email attachments will not open",
-        "My mailbox is full",
-        "Emails are stuck in the outbox",
-        "I cannot connect to Outlook",
-        "My email keeps asking for a password",
-        "Video calls have no sound",
-        "My microphone is not working in meetings",
+        "my email attachments will not download",
+        "my emails are going to spam",
+        "I cannot connect to the mail server",
+        "video calls have no sound",
+        "my microphone is not working in meetings",
+        "I cannot access my mailbox",
         "Ich kann keine E-Mails senden",
         "Ich empfange keine E-Mails",
+        "Mein E-Mail-Konto synchronisiert nicht",
         "Outlook lässt sich nicht öffnen",
-        "E-Mail-Anhänge lassen sich nicht öffnen",
-        "Mein Postfach ist voll",
-        "E-Mails bleiben im Postausgang hängen",
-        "Ich kann keine Verbindung zu Outlook herstellen",
-        "Mein E-Mail-Programm fragt ständig nach einem Passwort",
-        "Bei Videokonferenzen gibt es keinen Ton",
-        "Mein Mikrofon funktioniert in Besprechungen nicht"
+        "E-Mail-Anhänge lassen sich nicht herunterladen",
+        "Ich kann keine Verbindung zum Mailserver herstellen",
     ],
     "Security & VPN": [
-        "My VPN will not connect",
+        "my VPN will not connect",
         "I cannot access the company VPN",
-        "My antivirus shows an alert",
+        "my antivirus detected a threat",
         "I received a suspicious email",
-        "My security certificate has expired",
-        "The firewall blocks my application",
-        "My VPN connection keeps dropping",
-        "Windows Defender detected a threat",
-        "I think my account has been compromised",
-        "I think I clicked a phishing link",
+        "I think my account was hacked",
+        "my firewall is blocking an application",
+        "I cannot connect securely to the network",
+        "my VPN connection keeps disconnecting",
+        "I received a phishing message",
+        "my security software is not working",
         "Mein VPN verbindet sich nicht",
-        "Ich kann nicht auf das Firmen-VPN zugreifen",
-        "Mein Virenschutz zeigt eine Warnung",
+        "Ich kann keine Verbindung zum Firmen-VPN herstellen",
+        "Mein Antivirenprogramm hat eine Bedrohung erkannt",
         "Ich habe eine verdächtige E-Mail erhalten",
-        "Mein Sicherheitszertifikat ist abgelaufen",
-        "Die Firewall blockiert meine Anwendung",
-        "Meine VPN-Verbindung bricht ständig ab",
-        "Windows Defender hat eine Bedrohung erkannt",
-        "Ich glaube, mein Konto wurde kompromittiert",
-        "Ich glaube, ich habe auf einen Phishing-Link geklickt"
-    ]
+        "Ich glaube, mein Konto wurde gehackt",
+        "Meine Firewall blockiert ein Programm",
+    ],
 }
 
-# =====================================================
-# BILINGUAL SOLUTIONS
-# =====================================================
-solutions = {
-    "Network & Internet": {
-        "en": [
-            "Check whether Wi-Fi is enabled and airplane mode is off.",
-            "Check whether other devices can use the same network.",
-            "Disconnect and reconnect to the network if possible.",
-            "On Windows, run ipconfig in Command Prompt to inspect network settings.",
-            "If the problem continues, record the error message and contact IT Support."
-        ],
-        "de": [
-            "Prüfen Sie, ob WLAN aktiviert und der Flugmodus ausgeschaltet ist.",
-            "Prüfen Sie, ob andere Geräte dasselbe Netzwerk nutzen können.",
-            "Trennen Sie die Netzwerkverbindung und verbinden Sie sich erneut.",
-            "Unter Windows können Sie mit ipconfig in der Eingabeaufforderung die Netzwerkkonfiguration prüfen.",
-            "Notieren Sie bei anhaltenden Problemen die Fehlermeldung und wenden Sie sich an den IT-Support."
-        ]
-    },
-    "Login & Accounts": {
-        "en": [
-            "Check your username, keyboard layout and Caps Lock.",
-            "Use your organization's official password-reset process if needed.",
-            "Check whether the sign-in service is available.",
-            "Never share your password or verification codes.",
-            "Contact IT Support for locked accounts or permission problems."
-        ],
-        "de": [
-            "Prüfen Sie Benutzernamen, Tastaturlayout und Feststelltaste.",
-            "Nutzen Sie bei Bedarf das offizielle Verfahren zum Zurücksetzen des Passworts.",
-            "Prüfen Sie, ob der Anmeldedienst verfügbar ist.",
-            "Geben Sie niemals Ihr Passwort oder Ihre Bestätigungscodes weiter.",
-            "Wenden Sie sich bei gesperrten Konten oder fehlenden Berechtigungen an den IT-Support."
-        ]
-    },
-    "Windows & Operating System": {
-        "en": [
-            "Save your work and restart the computer if safe.",
-            "Check available disk space and pending Windows updates.",
-            "Record any error code or blue-screen message.",
-            "Avoid recovery operations if you are unsure of their effects.",
-            "Contact IT Support if startup failures or crashes continue."
-        ],
-        "de": [
-            "Speichern Sie Ihre Arbeit und starten Sie den Computer neu, sofern dies sicher ist.",
-            "Prüfen Sie den verfügbaren Speicherplatz und ausstehende Windows-Updates.",
-            "Notieren Sie Fehlercodes oder Meldungen auf einem Bluescreen.",
-            "Führen Sie keine Wiederherstellungsmaßnahmen durch, deren Auswirkungen Sie nicht kennen.",
-            "Wenden Sie sich bei wiederholten Startproblemen oder Abstürzen an den IT-Support."
-        ]
-    },
-    "Software & Applications": {
-        "en": [
-            "Close the application completely and reopen it.",
-            "Check whether the issue affects only this application.",
-            "Check for approved application updates.",
-            "Record the exact error message.",
-            "Contact IT Support if the problem continues."
-        ],
-        "de": [
-            "Schließen Sie die Anwendung vollständig und öffnen Sie sie erneut.",
-            "Prüfen Sie, ob nur diese Anwendung betroffen ist.",
-            "Prüfen Sie, ob freigegebene Updates verfügbar sind.",
-            "Notieren Sie die genaue Fehlermeldung.",
-            "Wenden Sie sich an den IT-Support, wenn das Problem weiterhin besteht."
-        ]
-    },
-    "Printers & Scanners": {
-        "en": [
-            "Check power, cables, Wi-Fi and the printer display.",
-            "Confirm that the correct printer is selected.",
-            "Check paper, toner and the print queue.",
-            "Try a test page if permitted by your organization.",
-            "Contact IT Support if the driver or connection may be faulty."
-        ],
-        "de": [
-            "Prüfen Sie Stromversorgung, Kabel, WLAN und die Druckeranzeige.",
-            "Stellen Sie sicher, dass der richtige Drucker ausgewählt ist.",
-            "Prüfen Sie Papier, Toner und die Druckwarteschlange.",
-            "Drucken Sie eine Testseite, sofern dies in Ihrem Unternehmen erlaubt ist.",
-            "Wenden Sie sich bei Treiber- oder Verbindungsproblemen an den IT-Support."
-        ]
-    },
-    "Hardware & Storage": {
-        "en": [
-            "Check power, cables and device connections.",
-            "Inspect available storage and close unused applications.",
-            "Keep ventilation openings clear if the device is overheating.",
-            "Back up important files when possible.",
-            "Contact IT Support for persistent hardware problems."
-        ],
-        "de": [
-            "Prüfen Sie Stromversorgung, Kabel und Geräteverbindungen.",
-            "Prüfen Sie den verfügbaren Speicherplatz und schließen Sie nicht benötigte Anwendungen.",
-            "Halten Sie Lüftungsöffnungen frei, wenn das Gerät überhitzt.",
-            "Sichern Sie wichtige Dateien, sofern möglich.",
-            "Wenden Sie sich bei anhaltenden Hardwareproblemen an den IT-Support."
-        ]
-    },
-    "Email & Communication": {
-        "en": [
-            "Check your internet connection and email service availability.",
-            "Verify the recipient address and attachment size.",
-            "Restart the email application and check approved updates.",
-            "For meeting audio issues, check the selected microphone and speakers.",
-            "Never share your password; contact IT Support if sign-in keeps failing."
-        ],
-        "de": [
-            "Prüfen Sie Ihre Internetverbindung und die Verfügbarkeit des E-Mail-Dienstes.",
-            "Überprüfen Sie die Empfängeradresse und die Größe des Anhangs.",
-            "Starten Sie das E-Mail-Programm neu und prüfen Sie freigegebene Updates.",
-            "Prüfen Sie bei Tonproblemen in Besprechungen das ausgewählte Mikrofon und die Lautsprecher.",
-            "Geben Sie Ihr Passwort niemals weiter und wenden Sie sich bei Anmeldeproblemen an den IT-Support."
-        ]
-    },
-    "Security & VPN": {
-        "en": [
-            "Use only your organization's official VPN application.",
-            "Check your internet connection and VPN account authorization.",
-            "Do not open suspicious links or attachments.",
-            "Never disable antivirus or firewall protection to bypass an error.",
-            "Report suspected phishing or account compromise to IT immediately."
-        ],
-        "de": [
-            "Verwenden Sie ausschließlich die offizielle VPN-Anwendung Ihres Unternehmens.",
-            "Prüfen Sie Ihre Internetverbindung und Ihre VPN-Zugriffsberechtigung.",
-            "Öffnen Sie keine verdächtigen Links oder Anhänge.",
-            "Deaktivieren Sie niemals Virenschutz oder Firewall, um eine Fehlermeldung zu umgehen.",
-            "Melden Sie vermutetes Phishing oder kompromittierte Konten sofort der IT-Abteilung."
-        ]
-    }
+# --------------------------------------------------
+# Troubleshooting solutions
+# --------------------------------------------------
+
+solutions_en = {
+    "Network & Internet": [
+        "Restart your router and wait 30 seconds before reconnecting.",
+        "Check that Wi-Fi is enabled and airplane mode is turned off.",
+        "Restart your computer and try connecting again.",
+        "If the issue continues, check whether other devices can access the internet.",
+    ],
+    "Login & Accounts": [
+        "Check that your username and password are entered correctly.",
+        "Check Caps Lock and your keyboard language.",
+        "Use the official password-reset process if you forgot your password.",
+        "If the account is locked, contact your IT administrator.",
+    ],
+    "Windows & Operating System": [
+        "Restart your computer and check whether the issue persists.",
+        "Install pending Windows updates if the computer starts normally.",
+        "Check available disk space.",
+        "If blue screens continue, record the error message and contact IT support.",
+    ],
+    "Software & Applications": [
+        "Close the application completely and open it again.",
+        "Restart your computer and try again.",
+        "Check whether an update is available for the application.",
+        "If the problem continues, record the exact error message.",
+    ],
+    "Printers & Scanners": [
+        "Check that the printer is powered on and connected.",
+        "Make sure the correct printer is selected.",
+        "Check for paper jams and sufficient paper.",
+        "Clear the print queue and restart the printer if necessary.",
+    ],
+    "Hardware & Storage": [
+        "Check the power cable and connections.",
+        "Restart the computer and reconnect the device.",
+        "Check available storage space.",
+        "If you hear unusual drive noises or suspect hardware failure, stop using the device and contact IT support.",
+    ],
+    "Email & Communication": [
+        "Check your internet connection.",
+        "Verify the email address and account settings.",
+        "Restart the email application and check for updates.",
+        "If the problem continues, contact your email administrator.",
+    ],
+    "Security & VPN": [
+        "Check your internet connection before reconnecting to the VPN.",
+        "Verify that you are using the official VPN application and current credentials.",
+        "Do not open suspicious links or attachments.",
+        "If you suspect a compromised account, contact IT or security support immediately.",
+    ],
 }
 
-# =====================================================
-# MODEL TRAINING
-# =====================================================
-problems = []
-categories = []
+solutions_de = {
+    "Network & Internet": [
+        "Starte deinen Router neu und warte 30 Sekunden, bevor du dich erneut verbindest.",
+        "Prüfe, ob WLAN aktiviert und der Flugmodus ausgeschaltet ist.",
+        "Starte deinen Computer neu und versuche erneut, eine Verbindung herzustellen.",
+        "Prüfe, ob andere Geräte auf das Internet zugreifen können.",
+    ],
+    "Login & Accounts": [
+        "Prüfe, ob Benutzername und Passwort korrekt eingegeben wurden.",
+        "Kontrolliere die Feststelltaste und die Tastatursprache.",
+        "Nutze das offizielle Verfahren zum Zurücksetzen des Passworts.",
+        "Wenn dein Konto gesperrt ist, kontaktiere die IT-Abteilung.",
+    ],
+    "Windows & Operating System": [
+        "Starte deinen Computer neu und prüfe, ob das Problem weiterhin besteht.",
+        "Installiere ausstehende Windows-Updates, sofern der Computer normal startet.",
+        "Prüfe den verfügbaren Speicherplatz.",
+        "Notiere bei wiederholten Bluescreens die Fehlermeldung und kontaktiere den IT-Support.",
+    ],
+    "Software & Applications": [
+        "Schließe das Programm vollständig und öffne es erneut.",
+        "Starte deinen Computer neu und versuche es noch einmal.",
+        "Prüfe, ob ein Update für die Anwendung verfügbar ist.",
+        "Notiere die genaue Fehlermeldung, falls das Problem weiterhin besteht.",
+    ],
+    "Printers & Scanners": [
+        "Prüfe, ob der Drucker eingeschaltet und angeschlossen ist.",
+        "Stelle sicher, dass der richtige Drucker ausgewählt ist.",
+        "Kontrolliere Papierstau und Papiervorrat.",
+        "Leere bei Bedarf die Druckwarteschlange und starte den Drucker neu.",
+    ],
+    "Hardware & Storage": [
+        "Prüfe das Stromkabel und alle Anschlüsse.",
+        "Starte den Computer neu und schließe das Gerät erneut an.",
+        "Kontrolliere den verfügbaren Speicherplatz.",
+        "Bei ungewöhnlichen Festplattengeräuschen oder vermutetem Hardwaredefekt solltest du das Gerät nicht weiter verwenden und den IT-Support kontaktieren.",
+    ],
+    "Email & Communication": [
+        "Prüfe deine Internetverbindung.",
+        "Überprüfe die E-Mail-Adresse und die Kontoeinstellungen.",
+        "Starte das E-Mail-Programm neu und suche nach Updates.",
+        "Wenn das Problem weiterhin besteht, kontaktiere deine E-Mail-Administration.",
+    ],
+    "Security & VPN": [
+        "Prüfe deine Internetverbindung, bevor du dich erneut mit dem VPN verbindest.",
+        "Stelle sicher, dass du die offizielle VPN-Anwendung und aktuelle Zugangsdaten verwendest.",
+        "Öffne keine verdächtigen Links oder Anhänge.",
+        "Wenn du einen Kontomissbrauch vermutest, kontaktiere sofort den IT- oder Sicherheits-Support.",
+    ],
+}
 
-for category, examples in training_data.items():
-    problems.extend(examples)
-    categories.extend([category] * len(examples))
+category_names_de = {
+    "Network & Internet": "Netzwerk & Internet",
+    "Login & Accounts": "Anmeldung & Konten",
+    "Windows & Operating System": "Windows & Betriebssystem",
+    "Software & Applications": "Software & Anwendungen",
+    "Printers & Scanners": "Drucker & Scanner",
+    "Hardware & Storage": "Hardware & Speicher",
+    "Email & Communication": "E-Mail & Kommunikation",
+    "Security & VPN": "Sicherheit & VPN",
+}
 
-vectorizer = TfidfVectorizer(
-    ngram_range=(1, 2),
-    strip_accents="unicode",
-    sublinear_tf=True,
-    stop_words=None
-)
+category_descriptions_en = {
+    "Network & Internet": "Wi-Fi, internet and network connection issues.",
+    "Login & Accounts": "Passwords, sign-in problems and locked accounts.",
+    "Windows & Operating System": "Windows errors, crashes and system performance.",
+    "Software & Applications": "Applications, installations and software errors.",
+    "Printers & Scanners": "Printing, scanning and device connection problems.",
+    "Hardware & Storage": "Computer hardware, USB devices and storage.",
+    "Email & Communication": "Email delivery, Outlook and communication tools.",
+    "Security & VPN": "VPN connectivity and common security concerns.",
+}
 
-problem_matrix = vectorizer.fit_transform(problems)
+category_descriptions_de = {
+    "Network & Internet": "Probleme mit WLAN, Internet und Netzwerkverbindungen.",
+    "Login & Accounts": "Passwörter, Anmeldeprobleme und gesperrte Konten.",
+    "Windows & Operating System": "Windows-Fehler, Abstürze und Systemleistung.",
+    "Software & Applications": "Anwendungen, Installationen und Softwarefehler.",
+    "Printers & Scanners": "Drucken, Scannen und Geräteverbindungen.",
+    "Hardware & Storage": "Computerhardware, USB-Geräte und Speicher.",
+    "Email & Communication": "E-Mail-Versand, Outlook und Kommunikation.",
+    "Security & VPN": "VPN-Verbindungen und allgemeine Sicherheitsprobleme.",
+}
 
-classifier = LogisticRegression(max_iter=2000)
-classifier.fit(problem_matrix, categories)
+category_icons = {
+    "Network & Internet": "🌐",
+    "Login & Accounts": "🔐",
+    "Windows & Operating System": "💻",
+    "Software & Applications": "🧩",
+    "Printers & Scanners": "🖨️",
+    "Hardware & Storage": "⚙️",
+    "Email & Communication": "📧",
+    "Security & VPN": "🛡️",
+}
 
-# =====================================================
-# SESSION STATE
-# =====================================================
-if "language" not in st.session_state:
-    st.session_state.language = "de"
+# --------------------------------------------------
+# Train the model
+# --------------------------------------------------
+
+@st.cache_resource
+def train_model():
+    texts = []
+    labels = []
+
+    for category, examples in training_data.items():
+        texts.extend(examples)
+        labels.extend([category] * len(examples))
+
+    model = Pipeline([
+        ("tfidf", TfidfVectorizer(
+            lowercase=True,
+            ngram_range=(1, 2),
+            strip_accents="unicode",
+        )),
+        ("classifier", LogisticRegression(max_iter=1500)),
+    ])
+
+    model.fit(texts, labels)
+    return model
+
+model = train_model()
+
+# --------------------------------------------------
+# Session state
+# --------------------------------------------------
 
 if "page" not in st.session_state:
     st.session_state.page = "home"
@@ -473,150 +506,124 @@ if "page" not in st.session_state:
 if "problem" not in st.session_state:
     st.session_state.problem = ""
 
-if "category" not in st.session_state:
-    st.session_state.category = ""
+if "predicted_category" not in st.session_state:
+    st.session_state.predicted_category = None
 
-if "low_match" not in st.session_state:
-    st.session_state.low_match = False
+if "confidence" not in st.session_state:
+    st.session_state.confidence = 0.0
 
-# =====================================================
-# LANGUAGE SELECTOR
-# =====================================================
-lang_choice = st.selectbox(
-    "Language / Sprache",
-    options=["Deutsch", "English"],
-    index=0 if st.session_state.language == "de" else 1,
-    key="language_selector"
-)
+# --------------------------------------------------
+# Header
+# --------------------------------------------------
 
-selected_language = "de" if lang_choice == "Deutsch" else "en"
-
-if selected_language != st.session_state.language:
-    st.session_state.language = selected_language
-    st.rerun()
-
-lang = st.session_state.language
-t = TEXT[lang]
-
-# =====================================================
-# STYLING HEADER
-# =====================================================
 st.markdown(f"""
 <div class="hero">
-    <div class="eyebrow">{t["eyebrow"]}</div>
-    <h1>{t["title"]}</h1>
-    <p><strong>{t["tagline"]}</strong></p>
-    <p>{t["description"]}</p>
+    <h1>💻 IT Support AI</h1>
+    <p>{TEXT["description"]}</p>
 </div>
 """, unsafe_allow_html=True)
 
-# =====================================================
-# HOME PAGE
-# =====================================================
+# --------------------------------------------------
+# Home page
+# --------------------------------------------------
+
 if st.session_state.page == "home":
-    st.markdown(f"""
-    <div class="panel">
-        <h3 style="color:#ffffff;">{t["question"]}</h3>
-        <p style="color:#a7bad0;line-height:1.8;">
-            {t["instructions"]}
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
 
-    with st.form("problem_form"):
-        user_problem = st.text_area(
-            t["problem_label"],
-            placeholder=t["placeholder"],
-            height=160
-        )
+    st.markdown(f"## {TEXT['title']}")
+    st.markdown(f"### {TEXT['categories']}")
 
-        submitted = st.form_submit_button(
-            t["button"],
-            use_container_width=True
-        )
+    descriptions = (
+        category_descriptions_de if is_german
+        else category_descriptions_en
+    )
 
-    if submitted:
-        cleaned_problem = user_problem.strip()
+    categories = list(training_data.keys())
 
-        if len(cleaned_problem) < 5:
-            st.warning(t["short_error"])
+    for start in range(0, len(categories), 2):
+        cols = st.columns(2)
+
+        for col, category in zip(cols, categories[start:start + 2]):
+            with col:
+                display_name = (
+                    category_names_de[category]
+                    if is_german else category
+                )
+
+                st.markdown(f"""
+                <div class="section-card">
+                    <h3>{category_icons[category]} {display_name}</h3>
+                    <p>{descriptions[category]}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown(f"### {TEXT['input_title']}")
+
+    problem = st.text_area(
+        TEXT["input_title"],
+        placeholder=TEXT["placeholder"],
+        height=130,
+        key="problem_input",
+        label_visibility="collapsed",
+    )
+
+    if st.button(TEXT["analyze"], use_container_width=True):
+        if not problem.strip():
+            st.warning(TEXT["empty"])
         else:
-            query = vectorizer.transform([cleaned_problem])
+            probabilities = model.predict_proba([problem])[0]
+            best_index = probabilities.argmax()
 
-            similarities = cosine_similarity(
-                query, problem_matrix
-            ).flatten()
-
-            best_index = int(similarities.argmax())
-            best_score = float(similarities[best_index])
-            predicted_category = classifier.predict(query)[0]
-
-            if best_score >= 0.08:
-                category = categories[best_index]
-            else:
-                category = predicted_category
-
-            st.session_state.problem = cleaned_problem
-            st.session_state.category = category
-            st.session_state.low_match = best_score < 0.08
-            st.session_state.page = "solution"
+            st.session_state.problem = problem.strip()
+            st.session_state.predicted_category = model.classes_[best_index]
+            st.session_state.confidence = float(probabilities[best_index])
+            st.session_state.page = "results"
             st.rerun()
 
-# =====================================================
-# RESULTS PAGE
-# =====================================================
-elif st.session_state.page == "solution":
-    st.markdown(f"## {t['results']}")
-    st.caption(t["results_desc"])
+# --------------------------------------------------
+# Results page
+# --------------------------------------------------
 
-    safe_problem = html.escape(st.session_state.problem)
+elif st.session_state.page == "results":
 
-    st.markdown(f"""
-    <div class="panel">
-        <div class="eyebrow">{t["reported"]}</div>
-        <p style="color:#edf4fc;">{safe_problem}</p>
-    </div>
-    """, unsafe_allow_html=True)
+    category = st.session_state.predicted_category
 
-    category = st.session_state.category
-    translated_category = t["categories"][category]
+    display_name = (
+        category_names_de[category] if is_german else category
+    )
+
+    solution_data = solutions_de if is_german else solutions_en
+
+    st.markdown(f"## {TEXT['result']}")
 
     st.markdown(f"""
     <div class="result-card">
-        <div class="eyebrow">{t["category"]}</div>
-        <h3 style="color:#ffffff;">{translated_category}</h3>
+        <h3>{TEXT['category']}</h3>
+        <h2>{category_icons[category]} {display_name}</h2>
+        <p>{TEXT['confidence']}: {st.session_state.confidence:.0%}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    if st.session_state.low_match:
-        st.warning(t["low_match"])
+    st.markdown(f"### {TEXT['solutions']}")
 
-    st.markdown(f"## {t['steps']}")
-
-    selected_solutions = solutions[category][lang]
-
-    for index, step in enumerate(selected_solutions, start=1):
+    for index, solution in enumerate(solution_data[category], start=1):
         st.markdown(f"""
-        <div class="step-card">
-            <div class="step-number">STEP {index:02d}</div>
-            <div style="margin-top:8px;color:#edf4fc;">
-                {html.escape(step)}
-            </div>
+        <div class="section-card">
+            <p><strong>{index}.</strong> {solution}</p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.info(t["disclaimer"])
+    st.markdown("")
 
-    if st.button(t["back"], use_container_width=True):
+    if st.button(TEXT["back"], use_container_width=True):
         st.session_state.page = "home"
         st.rerun()
 
-# =====================================================
-# FOOTER
-# =====================================================
-st.markdown(f"""
-<div class="footer">
-    <strong>Developed by Abdullah Aitah</strong><br>
-    {t["footer"]}
-</div>
-""", unsafe_allow_html=True)
+# --------------------------------------------------
+# Footer
+# --------------------------------------------------
+
+st.markdown(
+    f'<div class="footer">{TEXT["footer"]}</div>',
+    unsafe_allow_html=True,
+)
