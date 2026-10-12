@@ -1,4 +1,3 @@
-```
 
 import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -16,21 +15,6 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* Hide Streamlit's top toolbar/header */
-[data-testid="stHeader"],
-[data-testid="stToolbar"],
-[data-testid="stDecoration"],
-#MainMenu {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-}
-
-/* Reduce empty space left at the top */
-.block-container {
-    padding-top: 1rem !important;
-}
-
 .stApp {
     background: linear-gradient(135deg, #07111f 0%, #101e35 55%, #0a1424 100%);
     color: #f1f5f9;
@@ -424,5 +408,3 @@ st.markdown(
     f'<div class="footer">{T["footer"]}</div>',
     unsafe_allow_html=True,
 )
-
-```
