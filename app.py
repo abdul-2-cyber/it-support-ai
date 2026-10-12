@@ -343,7 +343,18 @@ if "page" not in st.session_state:
 
 if st.session_state.page == "home":
     st.markdown(f"## {T['title']}")
+    st.markdown(f"### {T['categories']}")
 
+    category_labels = [
+        T["network"], T["login"], T["windows"], T["software"],
+        T["printer"], T["hardware"], T["email"], T["security"],
+    ]
+
+    # Plain text list: no cards
+    for label in category_labels:
+        st.markdown(f"- {label}")
+
+    st.markdown("---")
     st.markdown(f"### {T['input']}")
 
     problem = st.text_area(
@@ -366,18 +377,6 @@ if st.session_state.page == "home":
             st.session_state.confidence = float(probabilities[best_index])
             st.session_state.page = "results"
             st.rerun()
-
-    st.markdown("---")
-    st.markdown(f"### {T['categories']}")
-
-    category_labels = [
-        T["network"], T["login"], T["windows"], T["software"],
-        T["printer"], T["hardware"], T["email"], T["security"],
-    ]
-
-    # Plain text list: no cards
-    for label in category_labels:
-        st.markdown(f"- {label}")
 
 # -------------------- Results page --------------------
 
