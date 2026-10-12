@@ -1,409 +1,515 @@
 
+import html
 import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
+from sklearn.metrics.pairwise import cosine_similarity
 
+# ==================================================
+# PAGE CONFIGURATION
+# ==================================================
 st.set_page_config(
-    page_title="IT Support AI",
-    page_icon="💻",
+    page_title="IT Support Assistant",
+    page_icon="🛠️",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="collapsed"
 )
 
-# -------------------- Design --------------------
-
+# ==================================================
+# PROFESSIONAL CUSTOMER INTERFACE
+# ==================================================
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 .stApp {
-    background: linear-gradient(135deg, #07111f 0%, #101e35 55%, #0a1424 100%);
-    color: #f1f5f9;
+    background: #0b1120;
+    color: #edf4fc;
+    font-family: 'Inter', sans-serif;
 }
+
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
+[data-testid="stToolbar"],
+#MainMenu,
+[data-testid="stDecoration"],
+[data-testid="stAppDeployButton"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+footer {
+    visibility: hidden !important;
+}
+
 .block-container {
-    max-width: 1100px;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+    max-width: 920px;
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
 }
+
 .hero {
-    background: linear-gradient(135deg, #142b49, #102039);
-    border: 1px solid #294363;
-    border-radius: 18px;
-    padding: 32px;
-    margin-bottom: 26px;
+    background: linear-gradient(125deg, #142944, #104464);
+    border: 1px solid #285273;
+    border-radius: 22px;
+    padding: 38px;
+    margin-bottom: 28px;
 }
+
+.eyebrow {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
 .hero h1 {
-    color: white;
-    font-size: 2.5rem;
+    color: #ffffff;
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 800;
+    margin-bottom: 12px;
 }
+
 .hero p {
-    color: #c2d1e3;
-    font-size: 1.05rem;
+    color: #c3d7ea;
+    font-size: 16px;
+    line-height: 1.8;
+    margin-bottom: 0;
 }
-.stTextArea textarea {
-    background-color: #0d192a !important;
-    color: #f1f5f9 !important;
-    border: 1px solid #334b69 !important;
-    border-radius: 10px !important;
+
+.panel {
+    background: #111d30;
+    border: 1px solid #263b55;
+    border-radius: 18px;
+    padding: 26px;
+    margin: 18px 0;
 }
-div.stButton > button {
-    background: #2477e8;
+
+div[data-testid="stTextArea"] textarea {
+    background: #0e1a2d !important;
+    color: #f8fafc !important;
+    border: 1px solid #3b5675 !important;
+    border-radius: 12px !important;
+    caret-color: #7dd3fc !important;
+}
+
+div[data-testid="stTextArea"] textarea:focus {
+    border: 2px solid #38bdf8 !important;
+    box-shadow: 0 0 0 2px #38bdf833 !important;
+}
+
+div[data-testid="stTextArea"] textarea::placeholder {
+    color: #8fa6c0 !important;
+}
+
+.stButton > button,
+.stFormSubmitButton > button {
+    background: linear-gradient(90deg, #0284c7, #0369a1);
     color: white;
-    border: none;
-    border-radius: 9px;
-    padding: 0.65rem 1.2rem;
-    font-weight: 600;
+    border: 1px solid #168bc5;
+    border-radius: 11px;
+    min-height: 48px;
+    font-weight: 700;
+    transition: 0.2s;
 }
-div.stButton > button:hover {
-    background: #3989f5;
+
+.stButton > button:hover,
+.stFormSubmitButton > button:hover {
+    background: #0ea5e9;
     color: white;
+    border-color: #7dd3fc;
 }
-.result {
-    background: #111f33;
-    border-left: 4px solid #2477e8;
-    padding: 18px 22px;
+
+.result-card {
+    background: #13243a;
+    border: 1px solid #2b4561;
+    border-radius: 16px;
+    padding: 23px;
     margin: 15px 0;
-    border-radius: 5px;
 }
+
+.step-card {
+    background: #111e31;
+    border: 1px solid #293e58;
+    border-radius: 13px;
+    padding: 19px;
+    margin: 12px 0;
+    line-height: 1.8;
+}
+
+.step-number {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
 .footer {
     text-align: center;
-    color: #8295ad;
-    border-top: 1px solid #26364b;
-    padding-top: 20px;
+    color: #91a5bd;
+    border-top: 1px solid #24354c;
     margin-top: 40px;
-    font-size: 0.85rem;
+    padding-top: 24px;
+    font-size: 13px;
 }
-h2, h3 {
-    color: #f1f5f9;
+
+h1, h2, h3, h4 {
+    color: #f1f7ff;
+}
+
+@media (max-width: 700px) {
+    .hero {
+        padding: 24px;
+    }
+
+    .panel {
+        padding: 17px;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- Language --------------------
-
-if "language" not in st.session_state:
-    st.session_state.language = "English"
-
-language = st.selectbox(
-    "Language / Sprache",
-    ["English", "Deutsch"],
-    key="language",
-)
-de = language == "Deutsch"
-
-T = {
-    "description": (
-        "Beschreibe dein IT-Problem, um eine Kategorie und Lösungsvorschläge zu erhalten."
-        if de else
-        "Describe your IT problem to receive a category and troubleshooting suggestions."
-    ),
-    "title": "Wie können wir helfen?" if de else "How can we help you?",
-    "categories": "Verfügbare Support-Bereiche" if de else "Available Support Categories",
-    "network": "Netzwerk & Internet" if de else "Network & Internet",
-    "login": "Anmeldung & Konten" if de else "Login & Accounts",
-    "windows": "Windows & Betriebssystem" if de else "Windows & Operating System",
-    "software": "Software & Anwendungen" if de else "Software & Applications",
-    "printer": "Drucker & Scanner" if de else "Printers & Scanners",
-    "hardware": "Hardware & Speicher" if de else "Hardware & Storage",
-    "email": "E-Mail & Kommunikation" if de else "Email & Communication",
-    "security": "Sicherheit & VPN" if de else "Security & VPN",
-    "input": "Beschreibe dein Problem" if de else "Describe Your Problem",
-    "placeholder": "Zum Beispiel: Mein WLAN funktioniert nicht."
-                  if de else "For example: My Wi-Fi is not working.",
-    "analyze": "Problem analysieren" if de else "Analyze Problem",
-    "empty": "Bitte beschreibe zuerst dein Problem."
-             if de else "Please describe your problem first.",
-    "result": "Analyseergebnis" if de else "Analysis Result",
-    "predicted": "Erkannte Kategorie" if de else "Predicted Category",
-    "confidence": "Modell-Konfidenz" if de else "Model Confidence",
-    "solutions": "Lösungsvorschläge" if de else "Suggested Solutions",
-    "back": "Zurück" if de else "Back",
-    "footer": "Developed by Abdullah Aitah",
-}
-
-# -------------------- Training data --------------------
-
-data = {
+# ==================================================
+# TRAINING DATA
+# ==================================================
+training_data = {
     "Network & Internet": [
-        "wifi not working", "no internet connection",
-        "internet is slow", "network connection lost",
-        "cannot connect to wifi", "dns error",
-        "WLAN funktioniert nicht", "kein Internet",
-        "Internet ist langsam", "Netzwerkverbindung unterbrochen",
-        "keine WLAN Verbindung", "DNS Fehler",
+        "My Wi-Fi is not working",
+        "I have no internet connection",
+        "The internet is very slow",
+        "Websites are not loading",
+        "I have a DNS error",
+        "My computer has no IP address",
+        "The network keeps disconnecting",
+        "Wi-Fi connected but no internet",
+        "My Ethernet connection is not working",
+        "My laptop cannot find Wi-Fi networks",
+        "I cannot connect to the company network",
+        "Internet works on my phone but not my laptop",
+        "I cannot access the network gateway",
+        "My connection drops every few minutes"
     ],
     "Login & Accounts": [
-        "cannot log in", "forgot password", "account locked",
-        "login failed", "password not working",
-        "Ich kann mich nicht anmelden", "Passwort vergessen",
-        "Konto gesperrt", "Anmeldung fehlgeschlagen",
-        "Passwort funktioniert nicht",
+        "I cannot log in",
+        "My password is not working",
+        "My account is locked",
+        "I forgot my password",
+        "Access is denied",
+        "I cannot access a shared folder",
+        "My username is not recognized",
+        "I cannot sign in to Windows",
+        "I have no permission to open a file",
+        "My account has been disabled",
+        "I keep getting an incorrect password message",
+        "I am asked to sign in repeatedly"
     ],
     "Windows & Operating System": [
-        "computer is slow", "windows keeps crashing",
-        "blue screen", "windows update failed",
-        "computer freezes", "windows will not start",
-        "Computer ist langsam", "Windows stürzt ab",
-        "Bluescreen", "Windows Update fehlgeschlagen",
-        "Computer friert ein", "Windows startet nicht",
+        "My computer is very slow",
+        "Windows update failed",
+        "My PC shows a blue screen",
+        "Windows will not start",
+        "My computer keeps restarting",
+        "Windows is frozen",
+        "My laptop gets stuck during startup",
+        "My taskbar is not responding",
+        "Windows update is stuck",
+        "My computer crashes frequently",
+        "File Explorer is not responding",
+        "My PC shuts down unexpectedly"
     ],
     "Software & Applications": [
-        "application will not open", "software keeps crashing",
-        "cannot install a program", "application error",
-        "program not responding", "software installation failed",
-        "Programm öffnet sich nicht", "Software stürzt ab",
-        "Programm lässt sich nicht installieren",
-        "Anwendungsfehler", "Programm reagiert nicht",
+        "My application will not open",
+        "The program keeps crashing",
+        "I cannot install software",
+        "The application shows an error",
+        "My browser is not responding",
+        "The software installation failed",
+        "An application freezes every time",
+        "My program is incompatible",
+        "Office applications are not working",
+        "The application closes unexpectedly",
+        "I cannot uninstall a program",
+        "My browser keeps crashing"
     ],
     "Printers & Scanners": [
-        "printer not working", "printer offline",
-        "printer will not print", "paper jam",
-        "scanner not detected", "printer driver error",
-        "Drucker funktioniert nicht", "Drucker offline",
-        "Drucker druckt nicht", "Papierstau",
-        "Scanner wird nicht erkannt",
+        "My printer is not working",
+        "The printer is offline",
+        "I cannot print documents",
+        "The printer has a paper jam",
+        "My printer is not detected",
+        "The scanner is not working",
+        "My printer prints blank pages",
+        "The print queue is stuck",
+        "The printer driver is missing",
+        "I cannot connect to the network printer",
+        "My printer is connected but not printing",
+        "Windows cannot find my printer"
     ],
     "Hardware & Storage": [
-        "computer will not turn on", "hard drive not detected",
-        "usb device not recognized", "computer overheating",
-        "keyboard not working", "mouse not working",
-        "disk space full", "monitor no signal",
-        "Computer startet nicht", "Festplatte wird nicht erkannt",
-        "USB Gerät wird nicht erkannt", "Computer überhitzt",
-        "Tastatur funktioniert nicht", "Maus funktioniert nicht",
-        "Speicherplatz voll", "Monitor zeigt kein Signal",
+        "My hard drive is not detected",
+        "My disk is full",
+        "My laptop is overheating",
+        "My computer has no sound",
+        "My keyboard is not working",
+        "My mouse is not responding",
+        "My monitor shows no signal",
+        "My USB device is not detected",
+        "My computer runs out of memory",
+        "My laptop battery drains quickly",
+        "My laptop will not charge",
+        "My second monitor is not working"
     ],
     "Email & Communication": [
-        "cannot send emails", "not receiving emails",
-        "outlook will not open", "email not syncing",
-        "cannot access mailbox", "microphone not working",
-        "Ich kann keine E-Mails senden", "keine E-Mails erhalten",
-        "Outlook öffnet sich nicht", "E-Mail synchronisiert nicht",
-        "Kein Zugriff auf Postfach", "Mikrofon funktioniert nicht",
+        "I cannot send emails",
+        "I am not receiving emails",
+        "Outlook will not open",
+        "Email attachments will not open",
+        "My mailbox is full",
+        "Emails are stuck in the outbox",
+        "I cannot connect to Outlook",
+        "My email keeps asking for a password",
+        "Video calls have no sound",
+        "My microphone is not working in meetings",
+        "My calendar is not synchronizing",
+        "I cannot join a video meeting"
     ],
     "Security & VPN": [
-        "vpn will not connect", "antivirus detected threat",
-        "suspicious email", "account hacked",
-        "firewall blocking application", "vpn disconnecting",
-        "VPN verbindet sich nicht", "Antivirus hat Bedrohung erkannt",
-        "verdächtige E-Mail", "Konto gehackt",
-        "Firewall blockiert Programm", "VPN Verbindung bricht ab",
-    ],
+        "My VPN will not connect",
+        "I cannot access the company VPN",
+        "My antivirus shows an alert",
+        "I received a suspicious email",
+        "My security certificate has expired",
+        "The firewall blocks my application",
+        "My VPN connection keeps dropping",
+        "Windows Defender detected a threat",
+        "I think my account has been compromised",
+        "My VPN says authentication failed",
+        "I received a suspicious attachment",
+        "I think I clicked a phishing link"
+    ]
 }
 
-names_de = {
-    "Network & Internet": "Netzwerk & Internet",
-    "Login & Accounts": "Anmeldung & Konten",
-    "Windows & Operating System": "Windows & Betriebssystem",
-    "Software & Applications": "Software & Anwendungen",
-    "Printers & Scanners": "Drucker & Scanner",
-    "Hardware & Storage": "Hardware & Speicher",
-    "Email & Communication": "E-Mail & Kommunikation",
-    "Security & VPN": "Sicherheit & VPN",
-}
-
-solutions_en = {
+# ==================================================
+# TROUBLESHOOTING GUIDES
+# ==================================================
+solutions = {
     "Network & Internet": [
-        "Restart your router and wait 30 seconds.",
-        "Check that Wi-Fi is enabled and airplane mode is off.",
-        "Restart your computer and reconnect.",
-        "Check whether other devices can access the internet.",
+        "Check whether Wi-Fi is enabled and airplane mode is off.",
+        "Check whether other devices can access the same network.",
+        "Disconnect and reconnect to the network if possible.",
+        "On Windows, run ipconfig in Command Prompt to inspect network settings.",
+        "If the issue continues, record the error message and contact IT Support."
     ],
     "Login & Accounts": [
-        "Check your username and password.",
-        "Check Caps Lock and your keyboard language.",
-        "Use the official password-reset process.",
-        "Contact your IT administrator if your account is locked.",
+        "Check your username, keyboard layout and Caps Lock.",
+        "Use your organization's official password-reset process if needed.",
+        "Check whether the service is available.",
+        "Never share your password or verification codes.",
+        "Contact IT Support for locked accounts or permission problems."
     ],
     "Windows & Operating System": [
-        "Restart your computer.",
-        "Install pending Windows updates if possible.",
-        "Check your available disk space.",
-        "Record any error messages if the issue continues.",
+        "Save your work and restart the computer if safe.",
+        "Check available disk space and pending Windows updates.",
+        "Record any error code or blue-screen message.",
+        "Avoid recovery operations if you are unsure of their effects.",
+        "Contact IT Support if startup failures or crashes continue."
     ],
     "Software & Applications": [
         "Close the application completely and reopen it.",
-        "Restart your computer.",
-        "Check for application updates.",
-        "Record the exact error message if the problem continues.",
+        "Check whether the issue affects only this application.",
+        "Check for approved application updates.",
+        "Record the exact error message.",
+        "Contact IT Support if the problem continues."
     ],
     "Printers & Scanners": [
-        "Check that the printer is powered on and connected.",
-        "Make sure the correct printer is selected.",
-        "Check for paper jams.",
-        "Clear the print queue and restart the printer.",
+        "Check power, cables, Wi-Fi and the printer display.",
+        "Confirm that the correct printer is selected.",
+        "Check paper, toner and the print queue.",
+        "Try a test page if permitted by your organization.",
+        "Contact IT Support if the driver or connection may be faulty."
     ],
     "Hardware & Storage": [
-        "Check the power cable and connections.",
-        "Restart the computer and reconnect the device.",
-        "Check available storage space.",
-        "Contact IT support if you suspect hardware failure.",
+        "Check power, cables and device connections.",
+        "Inspect available storage and close unused applications.",
+        "Keep ventilation openings clear if the device is overheating.",
+        "Back up important files when possible.",
+        "Contact IT Support for persistent hardware problems."
     ],
     "Email & Communication": [
-        "Check your internet connection.",
-        "Verify your email address and account settings.",
-        "Restart your email application.",
-        "Contact your email administrator if the issue continues.",
+        "Check your internet connection and email service availability.",
+        "Verify the recipient address and attachment size.",
+        "Restart the email application and check approved updates.",
+        "For meeting audio issues, check the selected microphone and speakers.",
+        "Never share your password; contact IT Support if sign-in keeps failing."
     ],
     "Security & VPN": [
-        "Check your internet connection before reconnecting to VPN.",
-        "Use the official VPN application and current credentials.",
+        "Use only your organization's official VPN application.",
+        "Check your internet connection and VPN account authorization.",
         "Do not open suspicious links or attachments.",
-        "Contact IT security immediately if you suspect a compromised account.",
-    ],
+        "Never disable antivirus or firewall protection to bypass an error.",
+        "Report suspected phishing or account compromise to IT immediately."
+    ]
 }
 
-solutions_de = {
-    "Network & Internet": [
-        "Starte deinen Router neu und warte 30 Sekunden.",
-        "Prüfe, ob WLAN aktiviert und der Flugmodus ausgeschaltet ist.",
-        "Starte deinen Computer neu und verbinde dich erneut.",
-        "Prüfe, ob andere Geräte Internetzugriff haben.",
-    ],
-    "Login & Accounts": [
-        "Prüfe deinen Benutzernamen und dein Passwort.",
-        "Kontrolliere die Feststelltaste und die Tastatursprache.",
-        "Nutze das offizielle Verfahren zum Zurücksetzen des Passworts.",
-        "Kontaktiere bei einem gesperrten Konto die IT-Abteilung.",
-    ],
-    "Windows & Operating System": [
-        "Starte deinen Computer neu.",
-        "Installiere ausstehende Windows-Updates, sofern möglich.",
-        "Prüfe den verfügbaren Speicherplatz.",
-        "Notiere Fehlermeldungen, falls das Problem weiterhin besteht.",
-    ],
-    "Software & Applications": [
-        "Schließe das Programm vollständig und öffne es erneut.",
-        "Starte deinen Computer neu.",
-        "Prüfe, ob Updates für das Programm verfügbar sind.",
-        "Notiere die genaue Fehlermeldung, falls das Problem bleibt.",
-    ],
-    "Printers & Scanners": [
-        "Prüfe, ob der Drucker eingeschaltet und angeschlossen ist.",
-        "Stelle sicher, dass der richtige Drucker ausgewählt ist.",
-        "Kontrolliere, ob ein Papierstau vorliegt.",
-        "Leere die Druckwarteschlange und starte den Drucker neu.",
-    ],
-    "Hardware & Storage": [
-        "Prüfe das Stromkabel und alle Anschlüsse.",
-        "Starte den Computer neu und verbinde das Gerät erneut.",
-        "Prüfe den verfügbaren Speicherplatz.",
-        "Kontaktiere den IT-Support bei vermutetem Hardwaredefekt.",
-    ],
-    "Email & Communication": [
-        "Prüfe deine Internetverbindung.",
-        "Überprüfe deine E-Mail-Adresse und Kontoeinstellungen.",
-        "Starte dein E-Mail-Programm neu.",
-        "Kontaktiere die E-Mail-Administration, falls das Problem bleibt.",
-    ],
-    "Security & VPN": [
-        "Prüfe deine Internetverbindung, bevor du VPN erneut verbindest.",
-        "Verwende die offizielle VPN-Anwendung und aktuelle Zugangsdaten.",
-        "Öffne keine verdächtigen Links oder Anhänge.",
-        "Kontaktiere bei einem möglichen Kontomissbrauch sofort den IT-Support.",
-    ],
+# ==================================================
+# BUILD SEARCH MODEL
+# ==================================================
+problems = []
+categories = []
+
+for category, examples in training_data.items():
+    problems.extend(examples)
+    categories.extend([category] * len(examples))
+
+vectorizer = TfidfVectorizer(
+    ngram_range=(1, 2),
+    strip_accents="unicode",
+    sublinear_tf=True,
+    stop_words="english"
+)
+
+problem_matrix = vectorizer.fit_transform(problems)
+
+classifier = LogisticRegression(max_iter=1500)
+classifier.fit(problem_matrix, categories)
+
+# ==================================================
+# SESSION STATE
+# ==================================================
+defaults = {
+    "page": "home",
+    "problem": "",
+    "category": "",
+    "solution": [],
+    "low_match": False
 }
 
-# -------------------- Model --------------------
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
-@st.cache_resource
-def train_model():
-    texts, labels = [], []
-
-    for category, examples in data.items():
-        texts.extend(examples)
-        labels.extend([category] * len(examples))
-
-    pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(
-            lowercase=True,
-            ngram_range=(1, 2),
-            strip_accents="unicode",
-        )),
-        ("classifier", LogisticRegression(max_iter=1500)),
-    ])
-
-    pipeline.fit(texts, labels)
-    return pipeline
-
-model = train_model()
-
-# -------------------- Header --------------------
-
-st.markdown(f"""
+# ==================================================
+# HEADER
+# ==================================================
+st.markdown("""
 <div class="hero">
-    <h1>💻 IT Support AI</h1>
-    <p>{T["description"]}</p>
+    <div class="eyebrow">CUSTOMER SUPPORT CENTER</div>
+    <h1>IT Support Assistant</h1>
+    <p>
+        Technical support made simpler. Describe your issue and
+        receive practical guidance to help you resolve it.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-# -------------------- Home page --------------------
-
-if "page" not in st.session_state:
-    st.session_state.page = "home"
-
+# ==================================================
+# HOME PAGE — NO CATEGORY CARDS
+# ==================================================
 if st.session_state.page == "home":
-    st.markdown(f"## {T['title']}")
-    st.markdown(f"### {T['categories']}")
+    st.markdown("""
+    <div class="panel">
+        <h3 style="color:#ffffff;">How can we help you today?</h3>
+        <p style="color:#a7bad0;line-height:1.8;">
+            Describe the technical issue you are experiencing.
+            Include any error message if one appears.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    category_labels = [
-        T["network"], T["login"], T["windows"], T["software"],
-        T["printer"], T["hardware"], T["email"], T["security"],
-    ]
+    with st.form("problem_form"):
+        user_problem = st.text_area(
+            "Problem description",
+            placeholder=(
+                "Example: My laptop connects to Wi-Fi, "
+                "but websites do not load..."
+            ),
+            height=160
+        )
 
-    # Plain text list: no cards
-    for label in category_labels:
-        st.markdown(f"- {label}")
+        submitted = st.form_submit_button(
+            "Find a solution  →",
+            use_container_width=True
+        )
 
-    st.markdown("---")
-    st.markdown(f"### {T['input']}")
-
-    problem = st.text_area(
-        T["input"],
-        placeholder=T["placeholder"],
-        height=130,
-        key="problem_input",
-        label_visibility="collapsed",
-    )
-
-    if st.button(T["analyze"], use_container_width=True):
-        if not problem.strip():
-            st.warning(T["empty"])
+    if submitted:
+        if len(user_problem.strip()) < 5:
+            st.warning("Please describe your issue in a little more detail.")
         else:
-            probabilities = model.predict_proba([problem])[0]
-            best_index = probabilities.argmax()
+            query = vectorizer.transform([user_problem.strip()])
+            similarities = cosine_similarity(
+                query, problem_matrix
+            ).flatten()
 
-            st.session_state.problem = problem.strip()
-            st.session_state.predicted_category = model.classes_[best_index]
-            st.session_state.confidence = float(probabilities[best_index])
-            st.session_state.page = "results"
+            best_index = int(similarities.argmax())
+            best_score = float(similarities[best_index])
+            predicted_category = classifier.predict(query)[0]
+
+            category = (
+                categories[best_index]
+                if best_score >= 0.08
+                else predicted_category
+            )
+
+            st.session_state.problem = user_problem.strip()
+            st.session_state.category = category
+            st.session_state.solution = solutions[category]
+            st.session_state.low_match = best_score < 0.08
+            st.session_state.page = "solution"
             st.rerun()
 
-# -------------------- Results page --------------------
+# ==================================================
+# RESULTS PAGE
+# ==================================================
+elif st.session_state.page == "solution":
+    st.markdown("## Your Support Results")
+    st.caption("Review the recommended steps for your issue.")
 
-elif st.session_state.page == "results":
-    category = st.session_state.predicted_category
-    display_name = names_de[category] if de else category
-    solutions = solutions_de if de else solutions_en
+    st.markdown(f"""
+    <div class="panel">
+        <div class="eyebrow">YOUR REPORTED ISSUE</div>
+        <p style="color:#edf4fc;">{html.escape(st.session_state.problem)}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown(f"## {T['result']}")
-    st.markdown(f"### {T['predicted']}")
-    st.markdown(f"## {display_name}")
-    st.caption(f"{T['confidence']}: {st.session_state.confidence:.0%}")
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
+    st.markdown("### Issue category")
+    st.subheader(st.session_state.category)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown(f"### {T['solutions']}")
+    if st.session_state.low_match:
+        st.warning(
+            "We could not find a strong match. The suggested category may "
+            "not be correct. Try adding your device name and exact error."
+        )
 
-    for number, solution in enumerate(solutions[category], start=1):
-        st.markdown(f"{number}. {solution}")
+    st.markdown("## Recommended next steps")
 
-    st.markdown("---")
+    for index, step in enumerate(st.session_state.solution, start=1):
+        st.markdown(f"""
+        <div class="step-card">
+            <div class="step-number">STEP {index:02d}</div>
+            <div style="margin-top:8px;">{html.escape(step)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.button(T["back"], use_container_width=True):
+    st.info(
+        "These suggestions are general guidance, not a confirmed diagnosis. "
+        "Follow your organization's IT policies."
+    )
+
+    if st.button("← Report another issue", use_container_width=True):
         st.session_state.page = "home"
         st.rerun()
 
-# -------------------- Footer --------------------
-
-st.markdown(
-    f'<div class="footer">{T["footer"]}</div>',
-    unsafe_allow_html=True,
-)
+# ==================================================
+# FOOTER
+# ==================================================
+st.markdown("""
+<div class="footer">
+    <strong>Developed by Abdullah Aitah</strong><br>
+    Customer IT Support
+</div>
+""", unsafe_allow_html=True)
