@@ -1,10 +1,11 @@
 
 
+
+import html
 import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics.pairwise import cosine_similarity
-import html
 
 # ==================================================
 # PAGE CONFIGURATION
@@ -13,56 +14,41 @@ st.set_page_config(
     page_title="IT Support Assistant",
     page_icon="🛠️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ==================================================
-# HIDE STREAMLIT TOOLBAR WHERE SUPPORTED
+# PROFESSIONAL CUSTOMER INTERFACE
 # ==================================================
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+.stApp {
+    background: #0b1120;
+    color: #edf4fc;
+    font-family: 'Inter', sans-serif;
+}
+
 header[data-testid="stHeader"] {
     display: none !important;
-    visibility: hidden !important;
 }
 
-[data-testid="stToolbar"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-#MainMenu {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-[data-testid="stDecoration"] {
-    display: none !important;
-}
-
+[data-testid="stToolbar"],
+#MainMenu,
+[data-testid="stDecoration"],
 [data-testid="stAppDeployButton"] {
     display: none !important;
+    visibility: hidden !important;
 }
 
 footer {
     visibility: hidden !important;
 }
 
-/* Customer-facing design */
-.stApp {
-    background: #0b1120;
-    color: #edf4fc;
-    font-family: Arial, sans-serif;
-}
-
-[data-testid="stSidebar"] {
-    background: #101a2b;
-    border-right: 1px solid #263b55;
-}
-
 .block-container {
-    max-width: 1100px;
-    padding-top: 2rem;
+    max-width: 920px;
+    padding-top: 2.5rem;
     padding-bottom: 3rem;
 }
 
@@ -70,55 +56,90 @@ footer {
     background: linear-gradient(125deg, #142944, #104464);
     border: 1px solid #285273;
     border-radius: 22px;
-    padding: 34px;
-    margin-bottom: 26px;
+    padding: 38px;
+    margin-bottom: 28px;
+}
+
+.eyebrow {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
 }
 
 .hero h1 {
     color: #ffffff;
-    font-size: 38px;
+    font-size: clamp(30px, 4vw, 42px);
     font-weight: 800;
+    margin-bottom: 12px;
 }
 
 .hero p {
     color: #c3d7ea;
+    font-size: 16px;
     line-height: 1.8;
+    margin-bottom: 0;
 }
 
 .panel {
     background: #111d30;
     border: 1px solid #263b55;
-    border-radius: 17px;
+    border-radius: 18px;
+    padding: 26px;
+    margin: 18px 0;
+}
+
+div[data-testid="stTextArea"] textarea {
+    background: #0e1a2d !important;
+    color: #f8fafc !important;
+    border: 1px solid #3b5675 !important;
+    border-radius: 12px !important;
+    caret-color: #7dd3fc !important;
+}
+
+div[data-testid="stTextArea"] textarea:focus {
+    border: 2px solid #38bdf8 !important;
+    box-shadow: 0 0 0 2px #38bdf833 !important;
+}
+
+div[data-testid="stTextArea"] textarea::placeholder {
+    color: #8fa6c0 !important;
+}
+
+.stButton > button,
+.stFormSubmitButton > button {
+    background: linear-gradient(90deg, #0284c7, #0369a1);
+    color: white;
+    border: 1px solid #168bc5;
+    border-radius: 11px;
+    min-height: 48px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.stButton > button:hover,
+.stFormSubmitButton > button:hover {
+    background: #0ea5e9;
+    color: white;
+    border-color: #7dd3fc;
+}
+
+.result-card {
+    background: #13243a;
+    border: 1px solid #2b4561;
+    border-radius: 16px;
     padding: 23px;
-    margin: 14px 0;
+    margin: 15px 0;
 }
 
-.area {
-    background: #15243a;
-    border: 1px solid #2b405c;
-    border-radius: 13px;
-    padding: 17px;
-    margin-bottom: 12px;
-}
-
-.area strong {
-    color: #f1f7ff;
-}
-
-.area p {
-    color: #a7bad0;
-    font-size: 13px;
-    margin-bottom: 0;
-}
-
-.step {
+.step-card {
     background: #111e31;
     border: 1px solid #293e58;
     border-radius: 13px;
-    padding: 18px;
+    padding: 19px;
     margin: 12px 0;
     line-height: 1.8;
-    color: #edf4fc;
 }
 
 .step-number {
@@ -128,53 +149,26 @@ footer {
     letter-spacing: 1px;
 }
 
-div[data-testid="stTextArea"] textarea {
-    background: #0e1a2d !important;
-    color: #f8fafc !important;
-    border: 1px solid #3b5675 !important;
-    border-radius: 12px !important;
-}
-
-.stButton > button,
-.stFormSubmitButton > button {
-    background: linear-gradient(90deg, #0284c7, #0369a1);
-    color: white;
-    border: 0;
-    border-radius: 10px;
-    min-height: 45px;
-    font-weight: 700;
-}
-
-.stButton > button:hover,
-.stFormSubmitButton > button:hover {
-    background: #0ea5e9;
-    color: white;
+.footer {
+    text-align: center;
+    color: #91a5bd;
+    border-top: 1px solid #24354c;
+    margin-top: 40px;
+    padding-top: 24px;
+    font-size: 13px;
 }
 
 h1, h2, h3, h4 {
     color: #f1f7ff;
 }
 
-.footer {
-    text-align: center;
-    color: #91a5bd;
-    border-top: 1px solid #24354c;
-    margin-top: 38px;
-    padding-top: 22px;
-    font-size: 13px;
-}
-
 @media (max-width: 700px) {
     .hero {
-        padding: 22px;
-    }
-
-    .hero h1 {
-        font-size: 29px;
+        padding: 24px;
     }
 
     .panel {
-        padding: 16px;
+        padding: 17px;
     }
 }
 </style>
@@ -363,7 +357,7 @@ solutions = {
 }
 
 # ==================================================
-# SEARCH MODEL
+# BUILD SEARCH MODEL
 # ==================================================
 problems = []
 categories = []
@@ -400,43 +394,11 @@ for key, value in defaults.items():
         st.session_state[key] = value
 
 # ==================================================
-# SIDEBAR
-# ==================================================
-with st.sidebar:
-    st.markdown("## 🛠️ IT Support")
-    st.caption("Customer Help Center")
-    st.divider()
-
-    if st.button("⌂  Home", use_container_width=True):
-        st.session_state.page = "home"
-        st.rerun()
-
-    st.markdown("### Support services")
-    st.markdown("""
-    🌐 Network & Internet
-
-    🔐 Account Access
-
-    🖥️ Windows & Software
-
-    🖨️ Printers & Scanners
-
-    💾 Hardware
-
-    ✉️ Email & Communication
-
-    🛡️ Security & VPN
-    """)
-
-# ==================================================
 # HEADER
 # ==================================================
 st.markdown("""
 <div class="hero">
-    <div style="color:#7dd3fc;font-size:12px;font-weight:700;
-                letter-spacing:2px;margin-bottom:12px;">
-        CUSTOMER SUPPORT CENTER
-    </div>
+    <div class="eyebrow">CUSTOMER SUPPORT CENTER</div>
     <h1>IT Support Assistant</h1>
     <p>
         Technical support made simpler. Describe your issue and
@@ -446,7 +408,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================================================
-# HOME PAGE
+# HOME PAGE — NO CATEGORY CARDS
 # ==================================================
 if st.session_state.page == "home":
     st.markdown("""
@@ -459,40 +421,16 @@ if st.session_state.page == "home":
     </div>
     """, unsafe_allow_html=True)
 
-    left, right = st.columns(2)
-
-    with left:
-        st.markdown("""
-        <div class="area"><strong>🌐 Connectivity</strong>
-        <p>Wi-Fi, internet and network access</p></div>
-        <div class="area"><strong>🔐 Account access</strong>
-        <p>Login, passwords and permissions</p></div>
-        <div class="area"><strong>🖨️ Office equipment</strong>
-        <p>Printers, scanners and peripherals</p></div>
-        <div class="area"><strong>🛡️ Security</strong>
-        <p>VPN access and suspicious activity</p></div>
-        """, unsafe_allow_html=True)
-
-    with right:
-        st.markdown("""
-        <div class="area"><strong>🖥️ Windows</strong>
-        <p>Startup, updates and system errors</p></div>
-        <div class="area"><strong>🧩 Applications</strong>
-        <p>Software errors and crashes</p></div>
-        <div class="area"><strong>💾 Hardware</strong>
-        <p>Storage, displays and devices</p></div>
-        <div class="area"><strong>✉️ Communication</strong>
-        <p>Email, calendars and online meetings</p></div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("## Describe your issue")
-
     with st.form("problem_form"):
         user_problem = st.text_area(
             "Problem description",
-            placeholder="Example: My laptop connects to Wi-Fi, but websites do not load...",
-            height=145
+            placeholder=(
+                "Example: My laptop connects to Wi-Fi, "
+                "but websites do not load..."
+            ),
+            height=160
         )
+
         submitted = st.form_submit_button(
             "Find a solution  →",
             use_container_width=True
@@ -531,15 +469,10 @@ elif st.session_state.page == "solution":
     st.markdown("## Your Support Results")
     st.caption("Review the recommended steps for your issue.")
 
-    safe_problem = html.escape(st.session_state.problem)
-
     st.markdown(f"""
     <div class="panel">
-        <div style="color:#7dd3fc;font-size:12px;font-weight:700;
-                    letter-spacing:1px;margin-bottom:12px;">
-            YOUR REPORTED ISSUE
-        </div>
-        <p style="color:#edf4fc;">{safe_problem}</p>
+        <div class="eyebrow">YOUR REPORTED ISSUE</div>
+        <p style="color:#edf4fc;">{html.escape(st.session_state.problem)}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -558,7 +491,7 @@ elif st.session_state.page == "solution":
 
     for index, step in enumerate(st.session_state.solution, start=1):
         st.markdown(f"""
-        <div class="step">
+        <div class="step-card">
             <div class="step-number">STEP {index:02d}</div>
             <div style="margin-top:8px;">{html.escape(step)}</div>
         </div>
@@ -582,3 +515,4 @@ st.markdown("""
     Customer IT Support
 </div>
 """, unsafe_allow_html=True)
+
